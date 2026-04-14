@@ -1,8 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { X, ChartLineUp, Pulse, ShieldCheck, Warning } from "@phosphor-icons/react";
+import {
+  X,
+  ChartLineUp,
+  Pulse,
+  ShieldCheck,
+  Warning,
+  ArrowSquareOut,
+} from "@phosphor-icons/react";
 import { TokenLogo } from "@/components/ui/TokenLogo";
 import { Badge } from "@/components/ui/Badge";
 import { TokenPriceChart } from "./TokenPriceChart";
@@ -158,13 +166,25 @@ export function TokenDetailDrawer() {
               ) : null}
             </div>
           </div>
-          <button
-            onClick={close}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-text-secondary hover:bg-elevated hover:text-text-primary"
-            aria-label="Close"
-          >
-            <X size={16} weight="bold" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {tokenId && (
+              <Link
+                href={`/tokens/${tokenId}`}
+                onClick={close}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-small text-text-primary transition-colors hover:border-primary/40 hover:bg-primary-faint hover:text-primary"
+              >
+                Full page
+                <ArrowSquareOut size={12} weight="bold" />
+              </Link>
+            )}
+            <button
+              onClick={close}
+              className="grid h-8 w-8 place-items-center rounded-md text-text-secondary hover:bg-elevated hover:text-text-primary"
+              aria-label="Close"
+            >
+              <X size={16} weight="bold" />
+            </button>
+          </div>
         </div>
 
         {/* Chart */}

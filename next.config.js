@@ -5,6 +5,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "www.iconaves.com" },
       { protocol: "https", hostname: "iconaves.com" },
+      { protocol: "https", hostname: "dd.dexscreener.com" },
     ],
   },
   async rewrites() {

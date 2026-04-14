@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
 
 const CHAIN_BG: Record<string, string> = {
@@ -21,14 +21,20 @@ const CHAIN_DOT: Record<string, string> = {
   polygon: "bg-chain-polygon",
 };
 
-/**
- * Build AVE's icon CDN URL from a token_id or contract+chain pair.
- * token_id shape: "{contract}-{chain}" (what our backend stores).
- */
-function aveIconUrl(
+// DEXScreener's chain keys differ slightly from ours
+const DS_CHAIN: Record<string, string> = {
+  solana: "solana",
+  bsc: "bsc",
+  eth: "ethereum",
+  base: "base",
+  arbitrum: "arbitrum",
+  polygon: "polygon",
+};
+
+function parseContractAndChain(
   tokenId?: string | null,
   chain?: string | null,
-): string | null {
+): { contract: string; chainName: string } | null {
   if (!tokenId) return null;
   let contract = tokenId;
   let chainName = chain ?? "";
@@ -38,7 +44,35 @@ function aveIconUrl(
     chainName = tokenId.slice(idx + 1);
   }
   if (!contract || !chainName) return null;
-  return `https://www.iconaves.com/token_icon/${chainName.toLowerCase()}/${contract.toLowerCase()}.png`;
+  return { contract, chainName: chainName.toLowerCase() };
+}
+
+/** Build the list of CDN URLs to try in order. */
+function buildCandidateUrls(
+  tokenId?: string | null,
+  chain?: string | null,
+): string[] {
+  const parsed = parseContractAndChain(tokenId, chain);
+  if (!parsed) return [];
+  const { contract, chainName } = parsed;
+  const lc = contract.toLowerCase();
+  const dsChain = DS_CHAIN[chainName];
+  const urls: string[] = [];
+
+  // 1. AVE — works for many mainstream tokens
+  urls.push(`https://www.iconaves.com/token_icon/${chainName}/${lc}.png`);
+
+  // 2. DEXScreener — broad coverage, esp. Solana/BSC memes
+  if (dsChain) {
+    urls.push(
+      `https://dd.dexscreener.com/ds-data/tokens/${dsChain}/${lc}.png?size=lg`,
+    );
+  }
+
+  // 3. CoinGecko (unlikely for memes but useful for majors)
+  //    Skipped — their CDN path requires an internal id we don't have.
+
+  return urls;
 }
 
 export function TokenLogo({
@@ -54,26 +88,35 @@ export function TokenLogo({
   size?: number;
   logoUrl?: string | null;
 }) {
-  const [errored, setErrored] = useState(false);
+  const candidates = useMemo(
+    () => [
+      ...(logoUrl ? [logoUrl] : []),
+      ...buildCandidateUrls(tokenId, chain),
+    ],
+    [logoUrl, tokenId, chain],
+  );
+
+  const [idx, setIdx] = useState(0);
   const letter = (symbol?.replace("$", "").charAt(0) ?? "?").toUpperCase();
   const chainKey = (chain ?? "").toLowerCase();
   const bg = CHAIN_BG[chainKey] ?? "bg-elevated text-text-secondary";
   const dotBg = CHAIN_DOT[chainKey] ?? "bg-text-muted";
 
-  const src = logoUrl ?? aveIconUrl(tokenId, chain);
-  const showImg = src && !errored;
+  const src = candidates[idx];
+  const exhausted = idx >= candidates.length;
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      {showImg ? (
+      {!exhausted && src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src!}
+          key={src}
+          src={src}
           alt={symbol ?? ""}
           className="h-full w-full rounded-full border border-border bg-elevated object-cover"
           loading="lazy"
           referrerPolicy="no-referrer"
-          onError={() => setErrored(true)}
+          onError={() => setIdx((n) => n + 1)}
         />
       ) : (
         <div

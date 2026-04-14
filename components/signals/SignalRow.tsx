@@ -146,9 +146,42 @@ export function SignalRow({
       </div>
 
       <div className="text-right">
-        <span className="num inline-flex items-center rounded-sm bg-elevated px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-text-secondary">
-          #{row.cluster_id} · {row.cluster_active_count}/{row.cluster_size_total}
-        </span>
+        {(() => {
+          // Compute avg alpha, falling back to the wallet_alpha_scores list
+          // for older records that don't have avg_alpha_score stored.
+          const fallback =
+            Array.isArray(row.wallet_alpha_scores) &&
+            row.wallet_alpha_scores.length > 0
+              ? row.wallet_alpha_scores.reduce(
+                  (s: number, v: any) => s + Number(v || 0),
+                  0,
+                ) / row.wallet_alpha_scores.length
+              : 0;
+          const avgAlpha = Number(row.avg_alpha_score ?? fallback);
+
+          if (row.signal_type === "alpha") {
+            const tier = row.alpha_tier;
+            return (
+              <span
+                className={cn(
+                  "num inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+                  tier === "elite"
+                    ? "bg-primary-faint text-primary"
+                    : "bg-info/10 text-info",
+                )}
+              >
+                α {avgAlpha.toFixed(2)}
+                {tier === "elite" ? " ★" : ""}
+              </span>
+            );
+          }
+          return (
+            <span className="num inline-flex items-center rounded-sm bg-elevated px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-text-secondary">
+              #{row.cluster_id ?? "—"} · {row.cluster_active_count}/
+              {row.cluster_size_total}
+            </span>
+          );
+        })()}
       </div>
 
       <div className="text-right">
@@ -192,8 +225,13 @@ export function SignalRowHeaders({ mode }: { mode: SignalRowMode }) {
       <div className="text-right">24H</div>
       <div className="text-right">Vol 24H</div>
       <div className="text-right">Liquidity</div>
-      <div className="text-right">MCap</div>
-      <div className="text-right">Cabal</div>
+      <div
+        className="text-right"
+        title="Fully Diluted Valuation (total supply × price). Often higher than circulating market cap — beware low-float tokens."
+      >
+        FDV
+      </div>
+      <div className="text-right">Signal</div>
       <div className="text-right">{mode === "live" ? "Conv" : "Peak"}</div>
       <div className="text-right">Status</div>
     </div>

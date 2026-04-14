@@ -35,7 +35,7 @@ const SECONDARY = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { sidebarCollapsed, toggleSidebar, openPalette } = useUIStore();
   const collapsed = sidebarCollapsed;
 
   const logoutMutation = useMutation({
@@ -108,14 +108,16 @@ export function Sidebar() {
         {collapsed ? (
           <button
             type="button"
+            onClick={openPalette}
             className="grid h-9 w-full place-items-center rounded-md border border-border bg-surface text-text-secondary hover:bg-elevated hover:text-text-primary"
-            title="Search"
+            title="Search  ⌘K"
           >
             <MagnifyingGlass size={16} />
           </button>
         ) : (
           <button
             type="button"
+            onClick={openPalette}
             className="flex h-9 w-full items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-small text-text-muted transition-colors hover:border-border-strong hover:bg-elevated hover:text-text-secondary"
           >
             <MagnifyingGlass size={14} />

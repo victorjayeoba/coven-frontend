@@ -39,8 +39,12 @@ export function useTokenMarkets(tokenIds: (string | undefined | null)[]) {
       );
       return data ?? {};
     },
-    staleTime: 60_000,
-    refetchInterval: 60_000,
+    // SSE price.update events patch this cache live with sub-second latency.
+    // REST is only for initial load + refreshing fields SSE doesn't stream
+    // (mcap, holders, age). So poll only every 5 minutes.
+    staleTime: 2 * 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
     enabled: ids.length > 0,
   });
 }

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CaretLeft, CaretRight, Lightning } from "@phosphor-icons/react";
+import { Lightning } from "@phosphor-icons/react";
+import { Pagination } from "@/components/ui/Pagination";
 import {
   SignalRow,
   SignalRowHeaders,
@@ -13,6 +14,7 @@ import {
   type SortKey,
   type Source,
   type StatusFilter,
+  type TypeFilter,
 } from "@/components/signals/SignalsFilters";
 import { useLiveSignals } from "@/lib/hooks/useSignals";
 import { useBacktests } from "@/lib/hooks/useBacktests";
@@ -26,15 +28,15 @@ export default function SignalsPage() {
   const [source, setSource] = useState<Source>("backtest");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [chain, setChain] = useState<ChainFilter>("all");
+  const [signalType, setSignalType] = useState<TypeFilter>("all");
   const [sort, setSort] = useState<SortKey>("peak_desc");
   const [minConviction, setMinConviction] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
-  // Reset to first page whenever filters change
   useEffect(() => {
     setPage(0);
-  }, [source, status, chain, minConviction, sort, pageSize]);
+  }, [source, status, chain, signalType, minConviction, sort, pageSize]);
 
   const { data: liveData, isLoading: liveLoading } = useLiveSignals(60 * 24, 200);
   const { data: btData, isLoading: btLoading } = useBacktests({ limit: 200 });
@@ -50,6 +52,11 @@ export default function SignalsPage() {
     let rows = [...raw];
     if (status !== "all") rows = rows.filter((r: any) => r.status === status);
     if (chain !== "all") rows = rows.filter((r: any) => r.chain === chain);
+    if (signalType !== "all") {
+      rows = rows.filter(
+        (r: any) => (r.signal_type ?? "cluster") === signalType,
+      );
+    }
     if (minConviction > 0)
       rows = rows.filter(
         (r: any) => (r.conviction_score ?? 0) >= minConviction,
@@ -76,7 +83,7 @@ export default function SignalsPage() {
         break;
     }
     return rows;
-  }, [raw, status, chain, minConviction, sort]);
+  }, [raw, status, chain, signalType, minConviction, sort]);
 
   const openDrawer = (signalId: string) => {
     const next = new URLSearchParams(params.toString());
@@ -112,6 +119,8 @@ export default function SignalsPage() {
         onStatus={setStatus}
         chain={chain}
         onChain={setChain}
+        signalType={signalType}
+        onSignalType={setSignalType}
         sort={sort}
         onSort={setSort}
         minConviction={minConviction}
@@ -185,53 +194,16 @@ export default function SignalsPage() {
           </div>
         </div>
 
-        {/* Pagination */}
-        {filtered.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5">
-            <div className="flex items-center gap-3 text-small text-text-secondary">
-              <span className="num">
-                {start + 1}–{Math.min(end, filtered.length)} of{" "}
-                <span className="text-text-primary">{filtered.length}</span>
-              </span>
-              <div className="flex items-center gap-1.5">
-                <span className="label-micro">Rows</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="h-6 rounded border border-border bg-surface px-1.5 text-small text-text-primary focus:border-primary focus:outline-none"
-                >
-                  {[10, 25, 50, 100].map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(Math.max(0, safePage - 1))}
-                disabled={safePage === 0}
-                className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-small text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <CaretLeft size={12} weight="bold" /> Prev
-              </button>
-              <span className="num px-2 text-small text-text-primary">
-                Page {safePage + 1} of {totalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setPage(Math.min(totalPages - 1, safePage + 1))
-                }
-                disabled={safePage >= totalPages - 1}
-                className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-surface px-2 text-small text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next <CaretRight size={12} weight="bold" />
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          total={filtered.length}
+          page={safePage}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setPage(0);
+          }}
+        />
       </div>
     </div>
   );

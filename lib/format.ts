@@ -1,18 +1,30 @@
-export function formatUsd(value: number | null | undefined, digits = 2) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  if (value === 0) return "$0";
-  const abs = Math.abs(value);
-  if (abs < 0.0001) return `$${value.toExponential(2)}`;
-  if (abs >= 1_000_000_000) return `$${(value / 1e9).toFixed(2)}B`;
-  if (abs >= 1_000_000) return `$${(value / 1e6).toFixed(2)}M`;
-  if (abs >= 1_000) return `$${(value / 1e3).toFixed(2)}K`;
-  return `$${value.toFixed(digits)}`;
+function toNumber(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "string") {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
 }
 
-export function formatPct(value: number | null | undefined, digits = 2) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toFixed(digits)}%`;
+export function formatUsd(value: unknown, digits = 2) {
+  const n = toNumber(value);
+  if (n === null) return "—";
+  if (n === 0) return "$0";
+  const abs = Math.abs(n);
+  if (abs < 0.0001) return `$${n.toExponential(2)}`;
+  if (abs >= 1_000_000_000) return `$${(n / 1e9).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `$${(n / 1e6).toFixed(2)}M`;
+  if (abs >= 1_000) return `$${(n / 1e3).toFixed(2)}K`;
+  return `$${n.toFixed(digits)}`;
+}
+
+export function formatPct(value: unknown, digits = 2) {
+  const n = toNumber(value);
+  if (n === null) return "—";
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(digits)}%`;
 }
 
 export function formatAddress(addr: string | undefined, head = 4, tail = 4) {
@@ -30,7 +42,8 @@ export function formatRelativeTime(iso: string | number | Date): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-export function formatNumber(value: number | null | undefined) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-US").format(value);
+export function formatNumber(value: unknown) {
+  const n = toNumber(value);
+  if (n === null) return "—";
+  return new Intl.NumberFormat("en-US").format(n);
 }

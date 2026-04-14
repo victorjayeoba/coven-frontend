@@ -7,6 +7,7 @@ export type Source = "backtest" | "live";
 export type SortKey = "peak_desc" | "peak_asc" | "conviction_desc" | "recent";
 export type StatusFilter = "all" | "exec" | "partial" | "watch" | "blocked";
 export type ChainFilter = "all" | "solana" | "bsc";
+export type TypeFilter = "all" | "cluster" | "alpha";
 
 type Props = {
   source: Source;
@@ -15,6 +16,8 @@ type Props = {
   onStatus: (s: StatusFilter) => void;
   chain: ChainFilter;
   onChain: (c: ChainFilter) => void;
+  signalType: TypeFilter;
+  onSignalType: (t: TypeFilter) => void;
   sort: SortKey;
   onSort: (s: SortKey) => void;
   minConviction: number;
@@ -73,6 +76,8 @@ export function SignalsFilters({
   onStatus,
   chain,
   onChain,
+  signalType,
+  onSignalType,
   sort,
   onSort,
   minConviction,
@@ -92,6 +97,18 @@ export function SignalsFilters({
       </div>
 
       <div className="h-5 w-px bg-border" />
+
+      <Group label="Type">
+        <ChipGroup<TypeFilter>
+          value={signalType}
+          options={[
+            { label: "All", value: "all" },
+            { label: "Cluster", value: "cluster" },
+            { label: "Alpha", value: "alpha" },
+          ]}
+          onChange={onSignalType}
+        />
+      </Group>
 
       <Group label="Source">
         <ChipGroup<Source>

@@ -34,3 +34,11 @@ export function useClusters() {
     staleTime: 5 * 60_000,
   });
 }
+
+export function useTradeHistory(limit = 100) {
+  return useQuery({
+    queryKey: ["trades", "history", limit],
+    queryFn: () => endpoints.tradeHistory(limit),
+    refetchInterval: 60_000,
+  });
+}

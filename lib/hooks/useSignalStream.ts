@@ -1,0 +1,188 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
+/**
+ * Opens an EventSource to the backend and pipes signal events directly into
+ * the TanStack Query cache. New signals appear in the UI without any
+ * extra API roundtrip — the SSE payload IS the data.
+ *
+ * Falls back to invalidation for queries we can't surgically update
+ * (pnl-summary, trades — these need server aggregation).
+ */
+export function useSignalStream({
+  enabled = true,
+  baseUrl,
+}: { enabled?: boolean; baseUrl?: string } = {}) {
+  const qc = useQueryClient();
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const url =
+      baseUrl ??
+      `${process.env.NEXT_PUBLIC_API_URL || "/api"}/stream/signals`;
+
+    console.log("[SSE] connecting to", url);
+    const es = new EventSource(url, { withCredentials: true });
+    esRef.current = es;
+
+    es.onopen = () => {
+      console.log("[SSE] connected");
+    };
+    es.addEventListener("connected", (e) => {
+      console.log("[SSE] handshake:", (e as MessageEvent).data);
+    });
+
+    /** Match signals by id OR composite key (token+cluster+detected_at). */
+    const sameSignal = (a: any, b: any) => {
+      const aId = a?.id ?? a?._id;
+      const bId = b?.id ?? b?._id;
+      if (aId && bId && aId === bId) return true;
+      // Composite fallback for records inserted before id was attached
+      if (
+        a?.token_id &&
+        a.token_id === b?.token_id &&
+        (a.cluster_id ?? null) === (b.cluster_id ?? null) &&
+        (a.detected_at ?? null) === (b.detected_at ?? null)
+      )
+        return true;
+      return false;
+    };
+
+    /** Add or update a signal in every cached signals list */
+    const upsertIntoSignalCaches = (signal: any) => {
+      if (!signal || !signal.token_id) return;
+
+      const queries = qc.getQueriesData<any>({
+        queryKey: ["signals"],
+        exact: false,
+      });
+
+      let touched = 0;
+      for (const [key, oldData] of queries) {
+        if (!Array.isArray(oldData)) continue;
+        const existingIdx = oldData.findIndex((r: any) =>
+          sameSignal(r, signal),
+        );
+        let next: any[];
+        if (existingIdx >= 0) {
+          next = [...oldData];
+          next[existingIdx] = { ...oldData[existingIdx], ...signal };
+        } else {
+          next = [signal, ...oldData];
+        }
+        qc.setQueryData(key, next);
+        touched += 1;
+      }
+
+      // If no signal cache existed yet (e.g., user just navigated),
+      // invalidate as a fallback to populate it.
+      if (touched === 0) {
+        qc.invalidateQueries({ queryKey: ["signals"], exact: false });
+      }
+    };
+
+    es.addEventListener("signal.fired", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        console.log("[SSE] signal.fired", data);
+        upsertIntoSignalCaches(data);
+      } catch (err) {
+        console.error("[SSE] parse error fired:", err);
+      }
+    });
+
+    es.addEventListener("signal.scored", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        console.log("[SSE] signal.scored", data);
+        upsertIntoSignalCaches(data);
+
+        qc.invalidateQueries({ queryKey: ["pnl-summary"] });
+        qc.invalidateQueries({ queryKey: ["trades"], exact: false });
+      } catch (err) {
+        console.error("[SSE] parse error scored:", err);
+      }
+    });
+
+    /** Patch all token-markets caches with a live price update. */
+    const applyPriceUpdate = (p: any) => {
+      const tid = p?.token_id;
+      if (!tid) return;
+
+      // token-markets queries hold a dict { [token_id]: TokenMarket }
+      const mkQueries = qc.getQueriesData<any>({
+        queryKey: ["token-markets"],
+        exact: false,
+      });
+      for (const [key, oldData] of mkQueries) {
+        if (!oldData || typeof oldData !== "object") continue;
+        if (!(tid in oldData)) continue;
+        const prev = oldData[tid] ?? {};
+        const merged = {
+          ...prev,
+          ...(p.price_usd != null ? { price_usd: p.price_usd } : {}),
+          ...(p.price_change_24h != null
+            ? { price_change_24h: p.price_change_24h }
+            : {}),
+          ...(p.price_change_1h != null
+            ? { price_change_1h: p.price_change_1h }
+            : {}),
+          ...(p.tvl != null ? { tvl: p.tvl } : {}),
+          ...(p.volume_24h != null ? { volume_24h: p.volume_24h } : {}),
+          ...(p.makers_24h != null ? { makers_24h: p.makers_24h } : {}),
+        };
+        qc.setQueryData(key, { ...oldData, [tid]: merged });
+      }
+
+      // token-detail queries hold a single token dict (or {token: {...}} wrapper)
+      const tdQueries = qc.getQueriesData<any>({
+        queryKey: ["token-detail", tid],
+        exact: false,
+      });
+      for (const [key, oldData] of tdQueries) {
+        if (!oldData) continue;
+        const tok =
+          oldData.token && typeof oldData.token === "object"
+            ? oldData.token
+            : oldData;
+        const patch: Record<string, any> = {};
+        if (p.price_usd != null) patch.current_price_usd = p.price_usd;
+        if (p.price_change_24h != null)
+          patch.token_price_change_24h = p.price_change_24h;
+        if (p.price_change_1h != null)
+          patch.token_price_change_1h = p.price_change_1h;
+        if (p.tvl != null) patch.main_pair_tvl = p.tvl;
+        if (p.volume_24h != null) patch.token_tx_volume_usd_24h = p.volume_24h;
+        if (p.makers_24h != null) patch.token_makers_24h = p.makers_24h;
+        const newTok = { ...tok, ...patch };
+        const next =
+          oldData.token && typeof oldData.token === "object"
+            ? { ...oldData, token: newTok }
+            : newTok;
+        qc.setQueryData(key, next);
+      }
+    };
+
+    es.addEventListener("price.update", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        applyPriceUpdate(data);
+      } catch (err) {
+        console.error("[SSE] parse error price:", err);
+      }
+    });
+
+    es.onerror = (err) => {
+      console.warn("[SSE] error / reconnecting", err);
+    };
+
+    return () => {
+      es.close();
+      esRef.current = null;
+    };
+  }, [enabled, baseUrl, qc]);
+}
