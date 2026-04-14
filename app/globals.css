@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    background-color: #0b0e14;
+    color: #e4eaf2;
+    font-feature-settings: "cv11" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *::selection {
+    background-color: #3cc47b40;
+    color: #e4eaf2;
+  }
+
+  /* Scrollbar — thin, Nansen-style */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #2c3648;
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #3a4558;
+  }
+}
+
+@layer utilities {
+  /* Tabular numbers for prices, P&L, addresses */
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+  }
+
+  /* Uppercase micro label */
+  .label-micro {
+    font-size: 11px;
+    line-height: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    color: #5d6a80;
+  }
+
+  /* Row divider */
+  .divider-y > * + * {
+    border-top: 1px solid #1a222e;
+  }
+}
