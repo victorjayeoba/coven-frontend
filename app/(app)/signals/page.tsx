@@ -17,6 +17,7 @@ import {
   type StatusFilter,
   type TypeFilter,
 } from "@/components/signals/SignalsFilters";
+import { SignalsBanner } from "@/components/signals/SignalsBanner";
 import { useLiveSignals } from "@/lib/hooks/useSignals";
 import { useBacktests } from "@/lib/hooks/useBacktests";
 import { useTokenMarkets } from "@/lib/hooks/useTokenMarkets";
@@ -116,6 +117,8 @@ export default function SignalsPage() {
           Every cluster movement detected — filter, sort, explore.
         </p>
       </div>
+
+      <SignalsBanner />
 
       <SignalsFilters
         source={source}
