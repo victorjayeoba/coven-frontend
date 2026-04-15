@@ -11,33 +11,13 @@ import { DashboardSection } from "@/components/landing/DashboardSection";
 import { ProofStrip } from "@/components/landing/ProofStrip";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
+import { LandingHeader } from "@/components/landing/LandingHeader";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-base text-text-primary">
-      {/* Top nav */}
-      <header className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="text-h3 font-semibold tracking-tight">
-            Coven
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/sign-in"
-              className="inline-flex h-8 items-center rounded-md border border-border bg-surface/60 px-3 text-small font-medium text-text-primary backdrop-blur transition-colors hover:border-border-strong hover:bg-elevated"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/sign-up"
-              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-small font-semibold text-base transition-colors hover:bg-primary-hover"
-            >
-              Sign up
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Top nav — auth-aware */}
+      <LandingHeader />
 
       {/* Hero */}
       <section className="relative h-screen min-h-[680px] w-full overflow-hidden">
