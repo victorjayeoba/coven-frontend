@@ -6,9 +6,15 @@ On-chain alpha, detected and acted on in real time. Coven watches the smart-mone
 
 🏆 **Built for the AVE-CLAW Hackathon** — Coven is powered end-to-end by the [AVE Data API](https://ave.ai). Every signal we publish, every cluster we score, every token we list — the data comes from AVE. We use **11 of the 16** documented REST endpoints plus the live **`multi_tx` WebSocket stream**. Full breakdown in [AVE API usage](#-ave-api-usage--what-we-use-and-why) below.
 
-[🎬 Watch the demo](#-demo) · [🌐 Live site](https://usecoven.vercel.app/) · [⚙️ Backend repo](https://github.com/victorjayeoba/coven-backend)
+[🎬 Watch the demo](https://res.cloudinary.com/dsywwgmcs/video/upload/v1776271910/edited_video_ean77f.mp4) · [🌐 Live site](https://usecoven.vercel.app/) · [⚙️ Backend repo](https://github.com/victorjayeoba/coven-backend)
 
-> Replace the demo link above with your demo video URL when ready.
+---
+
+## 🎬 Watch the demo
+
+<video src="https://res.cloudinary.com/dsywwgmcs/video/upload/v1776271910/edited_video_ean77f.mp4" controls width="100%"></video>
+
+> If the player above doesn't load on your viewer (some markdown renderers strip `<video>` tags), [click here to play it in a new tab](https://res.cloudinary.com/dsywwgmcs/video/upload/v1776271910/edited_video_ean77f.mp4).
 
 ---
 
@@ -146,24 +152,12 @@ The four AVE endpoints we don't currently use (`top100_holders`, `rank_topics` c
 - Max position size — hard cap per bot trade.
 - Paper / live trading mode — clear "Real funds" warning when switched.
 
-## 🎬 Demo
-
-> Embed your demo video here. Suggested formats:
-
-```markdown
-[![Coven demo](path/to/thumbnail.png)](https://your-demo-link)
-```
-
-Or a direct video file:
-
-```html
-<video src="path/to/demo.mp4" controls width="100%"></video>
-```
+## 🎬 Walk-through
 
 **Live deployment:** <https://usecoven.vercel.app/>
 **Test account:** `kryptos@gmail.com` / `Test123$`
 
-Walk-through points to call out in the video:
+The video at the top of this README walks through:
 
 1. Landing page with the live signal grid scan background.
 2. Sign in → land on dashboard with live Movers + Cabals.
