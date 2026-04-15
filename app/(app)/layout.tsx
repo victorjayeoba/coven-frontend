@@ -1,3 +1,7 @@
+// All authenticated pages depend on cookies + per-user data — they can never
+// be safely prerendered. Force dynamic so Next stops trying.
+export const dynamic = "force-dynamic";
+
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { TokenDetailDrawer } from "@/components/drawer/TokenDetailDrawer";

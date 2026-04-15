@@ -1,3 +1,6 @@
+// Auth pages read `useSearchParams()` for the post-login redirect target.
+export const dynamic = "force-dynamic";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative grid min-h-screen place-items-center overflow-hidden bg-base px-4">
