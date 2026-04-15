@@ -5,32 +5,26 @@ import { usePathname, useRouter } from "next/navigation";
 import { useMe } from "@/lib/hooks/useMe";
 
 /**
- * Client-side auth gate for the (app) layout. The Next middleware can't
- * read the backend's cross-domain cookie, so we check the session here:
- * GET /api/auth/me — if it returns null we punt to /sign-in?next=<here>.
+ * Belt-and-suspenders auth gate. Middleware is the primary gate (reads the
+ * first-party session cookie set by the proxy). This component only catches
+ * the edge case where the cookie expired mid-session: the next /api/auth/me
+ * returns null and we punt to /sign-in without a full refresh.
  */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { data: me, isLoading, isFetched } = useMe();
+  const { data: me, isFetched } = useMe();
 
   useEffect(() => {
     if (!isFetched) return;
     if (!me) {
-      const url = new URL("/sign-in", window.location.origin);
-      if (pathname && pathname !== "/sign-in") url.searchParams.set("next", pathname);
-      router.replace(url.pathname + url.search);
+      const url = `/sign-in${pathname ? `?next=${encodeURIComponent(pathname)}` : ""}`;
+      router.replace(url);
     }
   }, [isFetched, me, pathname, router]);
 
-  if (isLoading || (isFetched && !me)) {
-    // Avoid flashing the protected UI while we check / redirect.
-    return (
-      <div className="grid h-screen place-items-center bg-base text-small text-text-muted">
-        Checking session…
-      </div>
-    );
-  }
-
+  // Render children immediately — don't block on the me check. Middleware
+  // already validated the cookie server-side before this page rendered.
+  // The useEffect above only kicks in if the cookie is somehow stale.
   return <>{children}</>;
 }
