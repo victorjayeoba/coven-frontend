@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,13 +13,18 @@ import { signUp } from "@/lib/api/auth";
 export default function SignUpPage() {
   const router = useRouter();
   const params = useSearchParams();
+  const qc = useQueryClient();
   const next = params.get("next") || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const mutation = useMutation({
     mutationFn: () => signUp(email, password),
-    onSuccess: () => router.push(next),
+    onSuccess: async (user) => {
+      qc.setQueryData(["me"], user);
+      qc.invalidateQueries();
+      router.push(next);
+    },
   });
 
   return (
