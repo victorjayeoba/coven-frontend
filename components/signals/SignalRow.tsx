@@ -119,6 +119,14 @@ export function SignalRow({
             <span className="rounded-sm bg-elevated px-1 text-[10px] uppercase tracking-wider text-text-muted">
               {row.chain}
             </span>
+            {Number(row._signal_count ?? 0) > 1 && (
+              <span
+                className="rounded-sm bg-primary-faint px-1 text-[10px] font-semibold text-primary"
+                title={`${row._signal_count} signals fired on this token — showing the strongest`}
+              >
+                ×{row._signal_count}
+              </span>
+            )}
           </div>
           <div className="truncate text-micro text-text-muted">
             {row.token_id?.split("-")[0]?.slice(0, 10)}…

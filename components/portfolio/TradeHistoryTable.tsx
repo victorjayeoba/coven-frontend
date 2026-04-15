@@ -10,8 +10,9 @@ type Trade = {
   symbol?: string;
   chain?: string;
   token_id?: string;
-  entry?: { size_usd?: number; price?: number };
-  exit?: { price?: number; reason?: string };
+  entry?: { size_usd?: number; price?: number; price_usd?: number };
+  exit?: { price?: number; price_usd?: number; reason?: string };
+  source?: "bot" | "signal";
   pnl_usd?: number;
   pnl_pct?: number;
   closed_at?: string;
@@ -87,15 +88,23 @@ export function TradeHistoryTable({
                       <span className="text-micro uppercase text-text-muted">
                         {t.chain}
                       </span>
+                      {t.source === "bot" && (
+                        <span
+                          className="rounded-sm bg-info/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-info"
+                          title="Opened by a bot"
+                        >
+                          Bot
+                        </span>
+                      )}
                     </Link>
                   </td>
                   <td className="num px-4 py-2.5 text-text-primary">
                     {formatUsd(t.entry?.size_usd ?? 0, 0)}
                   </td>
                   <td className="num px-4 py-2.5 text-text-secondary">
-                    {formatUsd(t.entry?.price ?? 0, 4)}
+                    {formatUsd(t.entry?.price_usd ?? t.entry?.price ?? 0, 6)}
                     <span className="mx-1 text-text-muted">→</span>
-                    {formatUsd(t.exit?.price ?? 0, 4)}
+                    {formatUsd(t.exit?.price_usd ?? t.exit?.price ?? 0, 6)}
                   </td>
                   <td className="px-4 py-2.5">
                     <span className="rounded-sm bg-elevated px-1.5 py-0.5 text-micro uppercase text-text-secondary">

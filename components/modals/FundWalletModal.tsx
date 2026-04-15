@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { X, Warning, CaretDown, Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { formatUsd } from "@/lib/format";
-import { useUIStore } from "@/lib/stores/useUIStore";
+import { NetworkId } from "@/lib/stores/useUIStore";
+import { useBalances, useDeposit } from "@/lib/hooks/useBalances";
 
 type Props = {
   open: boolean;
@@ -27,8 +28,11 @@ export function FundWalletModal({ open, onClose }: Props) {
   const [amount, setAmount] = useState<string>("");
   const [done, setDone] = useState(false);
 
-  const paperBalance = useUIStore((s) => s.paperBalance);
-  const deposit = useUIStore((s) => s.depositPaper);
+  const { data: balancesData } = useBalances();
+  const balances = balancesData?.balances ?? { solana: 0, bsc: 0 };
+  const totalBalance = balancesData?.total ?? 0;
+  const networkBalance = Number(balances[network as NetworkId] ?? 0);
+  const depositMut = useDeposit();
 
   useEffect(() => {
     if (!open) {
@@ -52,13 +56,20 @@ export function FundWalletModal({ open, onClose }: Props) {
   const valid = Number.isFinite(parsed) && parsed > 0;
   const selectedNet = NETWORKS.find((n) => n.id === network)!;
 
-  const handleDeposit = () => {
-    if (!valid) return;
-    deposit(parsed);
-    setDone(true);
-    setTimeout(() => {
-      onClose();
-    }, 1100);
+  const handleDeposit = async () => {
+    if (!valid || depositMut.isPending) return;
+    try {
+      await depositMut.mutateAsync({
+        network: network as NetworkId,
+        amount: parsed,
+      });
+      setDone(true);
+      setTimeout(() => {
+        onClose();
+      }, 1100);
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || "Deposit failed.");
+    }
   };
 
   return (
@@ -154,7 +165,7 @@ export function FundWalletModal({ open, onClose }: Props) {
                 Deposit successful
               </p>
               <p className="mt-1 text-small text-text-secondary">
-                {formatUsd(parsed, 2)} added to your paper wallet.
+                {formatUsd(parsed, 2)} added to your {selectedNet.name} paper wallet.
               </p>
             </div>
           ) : (
@@ -261,23 +272,39 @@ export function FundWalletModal({ open, onClose }: Props) {
                 ))}
               </div>
 
-              {/* Balance row */}
-              <div className="mt-4 flex items-center justify-between rounded-md border border-border bg-input px-3 py-2">
-                <span className="text-small text-text-secondary">
-                  Current paper balance
-                </span>
-                <span className="num text-body font-semibold text-text-primary">
-                  {formatUsd(paperBalance, 2)}
-                </span>
+              {/* Balance rows */}
+              <div className="mt-4 overflow-hidden rounded-md border border-border bg-input">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="inline-flex items-center gap-2 text-small text-text-secondary">
+                    <span
+                      className="grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-black"
+                      style={{ background: selectedNet.color }}
+                    >
+                      {selectedNet.symbol[0]}
+                    </span>
+                    {selectedNet.name} balance
+                  </span>
+                  <span className="num text-body font-semibold text-text-primary">
+                    {formatUsd(networkBalance, 2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border bg-surface/60 px-3 py-1.5">
+                  <span className="text-micro text-text-muted">Total across networks</span>
+                  <span className="num text-small font-semibold text-text-secondary">
+                    {formatUsd(totalBalance, 2)}
+                  </span>
+                </div>
               </div>
 
               <button
                 type="button"
-                disabled={!valid}
+                disabled={!valid || depositMut.isPending}
                 onClick={handleDeposit}
                 className="mt-4 h-10 w-full rounded-md bg-primary text-body font-semibold text-base transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Deposit {valid ? formatUsd(parsed, 2) : ""}
+                {depositMut.isPending
+                  ? "Depositing…"
+                  : `Deposit ${valid ? formatUsd(parsed, 2) : ""}`}
               </button>
             </>
           )}

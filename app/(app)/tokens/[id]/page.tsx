@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowSquareOut,
@@ -12,11 +13,15 @@ import {
   ShieldCheck,
   UsersThree,
   Warning,
+  ArrowsLeftRight,
 } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
 import { TokenLogo } from "@/components/ui/TokenLogo";
 import { TokenPriceChart } from "@/components/drawer/TokenPriceChart";
+import { TokenDexscreenerChart } from "@/components/tokens/TokenDexscreenerChart";
+import { TokenTxsPanel } from "@/components/tokens/TokenTxsPanel";
+import { useDexscreenerToken } from "@/lib/hooks/useDexscreener";
 import {
   useTokenCandles,
   useTokenDetail,
@@ -54,7 +59,7 @@ const STATUS_VARIANT: Record<string, any> = {
   blocked: "blocked",
 };
 
-type Tab = "signals" | "holders" | "risk";
+type Tab = "signals" | "holders" | "txs" | "risk";
 
 export default function TokenPage({
   params,
@@ -72,6 +77,7 @@ export default function TokenPage({
   const { data: risk } = useTokenRisk(tokenId);
   const { data: signals } = useTokenSignals(tokenId);
   const { data: smartHolders } = useTokenSmartHolders(tokenId);
+  const { data: dex } = useDexscreenerToken(tokenId, { refetchMs: 10_000 });
 
   const token = useMemo(() => {
     if (!detail) return null;
@@ -87,13 +93,6 @@ export default function TokenPage({
 
   const symbol = token?.symbol ?? "?";
   const name = token?.name;
-  const price = Number(token?.current_price_usd ?? NaN);
-  const change24h = Number(token?.token_price_change_24h ?? NaN);
-  const change1h = Number(token?.token_price_change_1h ?? NaN);
-  const mcap = Number(token?.market_cap ?? NaN);
-  const fdv = Number(token?.fdv ?? NaN);
-  const tvl = Number(token?.main_pair_tvl ?? token?.tvl ?? NaN);
-  const vol24 = Number(token?.token_tx_volume_usd_24h ?? NaN);
   const holders = Number(token?.holders ?? NaN);
   const launchAt = Number(token?.launch_at ?? NaN);
   const ageHours = Number.isFinite(launchAt) && launchAt > 0
@@ -102,6 +101,87 @@ export default function TokenPage({
 
   const allSignals = Array.isArray(signals) ? signals : [];
   const holdersList = Array.isArray(smartHolders) ? smartHolders : [];
+
+  // Chart + data source auto-detect. We default to DexScreener because 90%
+  // of copy-traded tokens aren't in AVE's deep index (fresh memes) — and the
+  // "DexScreener for a beat, flip to native" transition was visually jarring.
+  //
+  // We commit ONCE, synchronously, at first render based on the React Query
+  // cache. If the token was pre-loaded (e.g. user clicked from the signals
+  // feed which already prefetched detail+candles) we can detect deep AVE
+  // coverage before paint and start in native mode. Otherwise → dex and
+  // stay there. No skeleton, no flip.
+  const qc = useQueryClient();
+  const AVE_MIN_CANDLES = 40;
+  const [chartMode] = useState<"native" | "dex">(() => {
+    try {
+      const cachedDetail: any = qc.getQueryData(["token-detail", tokenId]);
+      const cachedCandles: any = qc.getQueryData([
+        "token-candles",
+        tokenId,
+        interval,
+        300,
+      ]);
+      const tok =
+        (cachedDetail?.token && typeof cachedDetail.token === "object"
+          ? cachedDetail.token
+          : cachedDetail) || null;
+      const hasPrice =
+        tok && Number(tok.current_price_usd ?? 0) > 0;
+      const points =
+        (cachedCandles &&
+          (cachedCandles.points ||
+            cachedCandles.list ||
+            cachedCandles.data ||
+            cachedCandles.klines)) ||
+        [];
+      const count = Array.isArray(points) ? points.length : 0;
+      if (hasPrice && count >= AVE_MIN_CANDLES) return "native";
+    } catch {}
+    return "dex";
+  });
+
+  // If we were on the Transactions tab and this token has no AVE coverage,
+  // fall back to Signals — DexScreener's iframe already shows trades.
+  useEffect(() => {
+    if (chartMode === "dex" && tab === "txs") setTab("signals");
+  }, [chartMode, tab]);
+
+  // Source of truth for the price / market stats follows the chart.
+  // While chartMode is still being decided, default to DexScreener data so
+  // the header numbers render from the snappier source immediately.
+  const useAve = chartMode === "native";
+  const price = Number(
+    useAve
+      ? token?.current_price_usd ?? dex?.priceUsd
+      : dex?.priceUsd ?? token?.current_price_usd,
+  );
+  const change24h = Number(
+    useAve
+      ? token?.token_price_change_24h ?? dex?.priceChange24h
+      : dex?.priceChange24h ?? token?.token_price_change_24h,
+  );
+  const change1h = Number(
+    useAve
+      ? token?.token_price_change_1h ?? dex?.priceChange1h
+      : dex?.priceChange1h ?? token?.token_price_change_1h,
+  );
+  const mcap = Number(
+    useAve ? token?.market_cap ?? dex?.marketCap : dex?.marketCap ?? token?.market_cap,
+  );
+  const fdv = Number(
+    useAve ? token?.fdv ?? dex?.fdv : dex?.fdv ?? token?.fdv,
+  );
+  const tvl = Number(
+    useAve
+      ? token?.main_pair_tvl ?? token?.tvl ?? dex?.liquidityUsd
+      : dex?.liquidityUsd ?? token?.main_pair_tvl ?? token?.tvl,
+  );
+  const vol24 = Number(
+    useAve
+      ? token?.token_tx_volume_usd_24h ?? dex?.volume24h
+      : dex?.volume24h ?? token?.token_tx_volume_usd_24h,
+  );
 
   const explorerUrl = explorerAddressUrl(chain, contract);
 
@@ -188,12 +268,25 @@ export default function TokenPage({
                 )}
               </div>
               <div className="mt-3 flex items-baseline gap-3">
-                <span className="num text-display font-semibold text-text-primary">
-                  {Number.isFinite(price)
-                    ? price < 0.01
-                      ? `$${price.toPrecision(4)}`
-                      : `$${price.toFixed(price < 1 ? 4 : 2)}`
-                    : "—"}
+                <span className="relative inline-flex items-baseline gap-2">
+                  <span
+                    className="relative inline-flex h-1.5 w-1.5 shrink-0 self-center"
+                    title={
+                      useAve
+                        ? "Live — streaming from AVE"
+                        : "Live — polling DexScreener every 10s"
+                    }
+                  >
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                  </span>
+                  <span className="num text-display font-semibold text-text-primary">
+                    {Number.isFinite(price)
+                      ? price < 0.01
+                        ? `$${price.toPrecision(4)}`
+                        : `$${price.toFixed(price < 1 ? 4 : 2)}`
+                      : "—"}
+                  </span>
                 </span>
                 {Number.isFinite(change24h) && (
                   <span
@@ -256,30 +349,66 @@ export default function TokenPage({
       </div>
 
       {/* CHART */}
-      <div className="rounded-lg border border-border bg-surface p-4">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <ChartLineUp size={14} className="text-primary" weight="fill" />
-            <span className="label-micro">Price · Volume</span>
-          </div>
-          <div className="flex gap-1">
-            {INTERVALS.map((iv) => (
-              <button
-                key={iv.value}
-                onClick={() => setInterval(iv.value)}
+            <ChartLineUp size={13} className="text-primary" weight="fill" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+              Price · Volume
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider",
+                chartMode === "native"
+                  ? "bg-primary-faint text-primary"
+                  : "bg-elevated text-text-secondary",
+              )}
+              title={
+                chartMode === "native"
+                  ? "Streaming from AVE · live price markers enabled"
+                  : "Streaming from DexScreener"
+              }
+            >
+              <span
                 className={cn(
-                  "rounded-md px-2 py-1 text-micro font-medium uppercase tracking-wider transition-colors",
-                  interval === iv.value
-                    ? "bg-elevated text-text-primary"
-                    : "text-text-secondary hover:bg-elevated hover:text-text-primary",
+                  "h-1 w-1 rounded-full",
+                  chartMode === "native" ? "animate-pulse bg-primary" : "bg-text-muted",
                 )}
-              >
-                {iv.label}
-              </button>
-            ))}
+              />
+              {chartMode === "native" ? "AVE · Live" : "DexScreener"}
+            </span>
           </div>
+          {chartMode === "native" && (
+            <div className="flex gap-0.5 rounded-md border border-border bg-base p-0.5">
+              {INTERVALS.map((iv) => (
+                <button
+                  key={iv.value}
+                  onClick={() => setInterval(iv.value)}
+                  className={cn(
+                    "rounded px-2 py-1 text-micro font-medium uppercase tracking-wider transition-colors",
+                    interval === iv.value
+                      ? "bg-elevated text-text-primary"
+                      : "text-text-muted hover:text-text-secondary",
+                  )}
+                >
+                  {iv.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <TokenPriceChart candlesRaw={candles} height={360} />
+        {chartMode === "dex" ? (
+          <TokenDexscreenerChart tokenId={tokenId} height={520} />
+        ) : (
+          <div className="p-3">
+            <TokenPriceChart
+              candlesRaw={candles}
+              height={440}
+              tokenId={tokenId}
+              intervalMinutes={interval}
+            />
+          </div>
+        )}
       </div>
 
       {/* TABS */}
@@ -305,6 +434,18 @@ export default function TokenPage({
               {holdersList.length}
             </Badge>
           </TabButton>
+          {chartMode === "native" && (
+            <TabButton
+              active={tab === "txs"}
+              onClick={() => setTab("txs")}
+              icon={<ArrowsLeftRight size={12} weight="fill" />}
+            >
+              Transactions
+              <span className="ml-1 inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+            </TabButton>
+          )}
+
+
           <TabButton
             active={tab === "risk"}
             onClick={() => setTab("risk")}
@@ -316,6 +457,9 @@ export default function TokenPage({
         <div className="p-4">
           {tab === "signals" && <SignalsPanel signals={allSignals} />}
           {tab === "holders" && <HoldersPanel holders={holdersList} />}
+          {tab === "txs" && (
+            <TokenTxsPanel tokenId={tokenId} chain={chain ?? undefined} />
+          )}
           {tab === "risk" && <RiskPanel risk={risk} token={token} />}
         </div>
       </div>

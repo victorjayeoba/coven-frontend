@@ -25,7 +25,7 @@ export default function SignalsPage() {
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const [source, setSource] = useState<Source>("backtest");
+  const [source, setSource] = useState<Source>("live");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [chain, setChain] = useState<ChainFilter>("all");
   const [signalType, setSignalType] = useState<TypeFilter>("all");
@@ -48,7 +48,7 @@ export default function SignalsPage() {
         detected_at: b.first_entry_at,
       }));
 
-  const filtered = useMemo(() => {
+  const rawFiltered = useMemo(() => {
     let rows = [...raw];
     if (status !== "all") rows = rows.filter((r: any) => r.status === status);
     if (chain !== "all") rows = rows.filter((r: any) => r.chain === chain);
@@ -84,6 +84,10 @@ export default function SignalsPage() {
     }
     return rows;
   }, [raw, status, chain, signalType, minConviction, sort]);
+
+  // Detector now upserts one signal per (token, cluster), so no client-side
+  // dedup is needed — the API already returns a clean list.
+  const filtered = rawFiltered;
 
   const openDrawer = (signalId: string) => {
     const next = new URLSearchParams(params.toString());

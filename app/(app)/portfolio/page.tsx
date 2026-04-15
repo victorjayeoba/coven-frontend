@@ -20,7 +20,7 @@ import {
   usePnlSummary,
   useTradeHistory,
 } from "@/lib/hooks/useTrades";
-import { useUIStore } from "@/lib/stores/useUIStore";
+import { useBalances } from "@/lib/hooks/useBalances";
 import { formatPct, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
@@ -33,7 +33,7 @@ export default function PortfolioPage() {
   const [range, setRange] = useState<Range>("30D");
   const [tab, setTab] = useState<Tab>("open");
 
-  const paperBalance = useUIStore((s) => s.paperBalance);
+  const paperBalance = useBalances().data?.total ?? 0;
   const { data: active, isLoading: loadingActive, refetch: refetchActive } =
     useActiveTrades();
   const { data: pnl, refetch: refetchPnl } = usePnlSummary();
@@ -84,8 +84,8 @@ export default function PortfolioPage() {
         t.symbol ?? "",
         t.chain ?? "",
         t.entry?.size_usd ?? "",
-        t.entry?.price ?? "",
-        t.exit?.price ?? "",
+        t.entry?.price_usd ?? t.entry?.price ?? "",
+        t.exit?.price_usd ?? t.exit?.price ?? "",
         t.pnl_usd ?? "",
         t.pnl_pct ?? "",
         t.exit?.reason ?? "",

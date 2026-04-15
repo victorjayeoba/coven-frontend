@@ -58,6 +58,8 @@ export function TokenPriceChart({
   candlesRaw,
   markers = [],
   height = 320,
+  tokenId,
+  intervalMinutes = 60,
 }: {
   candlesRaw: any;
   markers?: {
@@ -66,11 +68,14 @@ export function TokenPriceChart({
     text?: string;
   }[];
   height?: number;
+  tokenId?: string;
+  intervalMinutes?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const lastBarRef = useRef<Candle | null>(null);
 
   const { candles, volume } = useMemo(
     () => parseCandles(candlesRaw),
@@ -157,10 +162,54 @@ export function TokenPriceChart({
     if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
     candleSeriesRef.current.setData(candles);
     volumeSeriesRef.current.setData(volume);
+    lastBarRef.current = candles.length ? candles[candles.length - 1] : null;
     if (chartRef.current && candles.length) {
       chartRef.current.timeScale().fitContent();
     }
   }, [candles, volume]);
+
+  // Live streaming: update the current candle from price.update SSE events
+  useEffect(() => {
+    if (!tokenId) return;
+    const bucketSec = Math.max(1, intervalMinutes) * 60;
+
+    const onPrice = (e: Event) => {
+      const p = (e as CustomEvent).detail;
+      if (!p || p.token_id !== tokenId) return;
+      const price = Number(p.price_usd);
+      if (!Number.isFinite(price) || price <= 0) return;
+      if (!candleSeriesRef.current) return;
+
+      const nowSec = Math.floor(Date.now() / 1000);
+      const bucketTime = Math.floor(nowSec / bucketSec) * bucketSec;
+      const last = lastBarRef.current;
+
+      let bar: Candle;
+      if (last && (last.time as number) === bucketTime) {
+        bar = {
+          time: last.time,
+          open: last.open,
+          high: Math.max(last.high, price),
+          low: Math.min(last.low, price),
+          close: price,
+        };
+      } else {
+        const openPrice = last ? last.close : price;
+        bar = {
+          time: bucketTime as UTCTimestamp,
+          open: openPrice,
+          high: Math.max(openPrice, price),
+          low: Math.min(openPrice, price),
+          close: price,
+        };
+      }
+      candleSeriesRef.current.update(bar);
+      lastBarRef.current = bar;
+    };
+
+    window.addEventListener("coven:price", onPrice);
+    return () => window.removeEventListener("coven:price", onPrice);
+  }, [tokenId, intervalMinutes]);
 
   // Markers for cluster entries / exits
   useEffect(() => {

@@ -9,6 +9,7 @@ import {
   ShareNetwork,
   ClockCounterClockwise,
   Coins,
+  Robot,
   SlidersHorizontal,
   MagnifyingGlass,
   CaretLeft,
@@ -16,20 +17,23 @@ import {
   Question,
   SignOut,
   List,
+  PaperPlaneTilt,
 } from "@phosphor-icons/react";
 import { useUIStore } from "@/lib/stores/useUIStore";
 import { logout } from "@/lib/api/auth";
 import { cn } from "@/lib/cn";
+import { WhatsNewPopover } from "./WhatsNewPopover";
 
 const MAIN = [
   { href: "/", label: "Dashboard", icon: SquaresFour },
   { href: "/signals", label: "Signals", icon: Lightning },
   { href: "/graph", label: "Wallet Graph", icon: ShareNetwork },
-  { href: "/backtest", label: "Backtest", icon: ClockCounterClockwise },
+  { href: "/bots", label: "Bots", icon: Robot },
 ];
 
 const SECONDARY = [
   { href: "/portfolio", label: "Portfolio", icon: Coins },
+  { href: "/notifications", label: "Notifications", icon: PaperPlaneTilt },
 ];
 
 export function Sidebar() {
@@ -147,26 +151,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="border-t border-border p-2">
-        {renderItem({ href: "/settings", label: "Settings", icon: SlidersHorizontal }, "sm")}
-        {!collapsed && (
-          <button
-            type="button"
-            className="flex h-8 w-full items-center gap-3 rounded-md px-2 text-small text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary"
-          >
-            <Sparkle size={16} />
-            <span>What's New</span>
-            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
-          </button>
-        )}
-        {!collapsed && (
-          <button
-            type="button"
-            className="flex h-8 w-full items-center gap-3 rounded-md px-2 text-small text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary"
-          >
-            <Question size={16} />
-            <span>Help</span>
-          </button>
-        )}
+        {!collapsed && <WhatsNewPopover />}
         <button
           type="button"
           onClick={() => logoutMutation.mutate()}

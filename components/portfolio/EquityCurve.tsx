@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatUsd } from "@/lib/format";
-import { useUIStore } from "@/lib/stores/useUIStore";
+import { useBalances } from "@/lib/hooks/useBalances";
 
 type Trade = {
   id: string;
@@ -27,7 +27,7 @@ export function EquityCurve({
   history: Trade[];
   range: Range;
 }) {
-  const paperBalance = useUIStore((s) => s.paperBalance);
+  const paperBalance = useBalances().data?.total ?? 0;
 
   const data = useMemo(() => {
     const sorted = [...history]

@@ -34,8 +34,15 @@ export function formatAddress(addr: string | undefined, head = 4, tail = 4) {
 }
 
 export function formatRelativeTime(iso: string | number | Date): string {
-  const date = new Date(iso);
-  const diff = (Date.now() - date.getTime()) / 1000;
+  // Backend serializes UTC datetimes without a "Z" — force-tag as UTC so the
+  // browser doesn't misinterpret them as local time.
+  let input = iso;
+  if (typeof iso === "string" && !/[zZ]|[+-]\d\d:?\d\d$/.test(iso)) {
+    input = iso + "Z";
+  }
+  const date = new Date(input);
+  const diff = Math.max(0, (Date.now() - date.getTime()) / 1000);
+  if (diff < 5) return "just now";
   if (diff < 60) return `${Math.floor(diff)}s ago`;
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;

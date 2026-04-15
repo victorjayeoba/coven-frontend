@@ -56,6 +56,7 @@ export function useSignalStream({
     const upsertIntoSignalCaches = (signal: any) => {
       if (!signal || !signal.token_id) return;
 
+      // Patch the global signals feeds (dashboard + /signals page)
       const queries = qc.getQueriesData<any>({
         queryKey: ["signals"],
         exact: false,
@@ -78,10 +79,29 @@ export function useSignalStream({
         touched += 1;
       }
 
-      // If no signal cache existed yet (e.g., user just navigated),
-      // invalidate as a fallback to populate it.
       if (touched === 0) {
         qc.invalidateQueries({ queryKey: ["signals"], exact: false });
+      }
+
+      // Also patch the token-specific signals query on the token detail page
+      const tokenSignalQueries = qc.getQueriesData<any>({
+        queryKey: ["token-signals", signal.token_id],
+        exact: false,
+      });
+      for (const [key, oldData] of tokenSignalQueries) {
+        if (!Array.isArray(oldData)) continue;
+        const existingIdx = oldData.findIndex((r: any) =>
+          sameSignal(r, signal),
+        );
+        let next: any[];
+        if (existingIdx >= 0) {
+          next = [...oldData];
+          next[existingIdx] = { ...oldData[existingIdx], ...signal };
+        } else {
+          // Mark live signals with source="live" to match the token page UI
+          next = [{ ...signal, source: signal.source ?? "live" }, ...oldData];
+        }
+        qc.setQueryData(key, next);
       }
     };
 
@@ -138,6 +158,75 @@ export function useSignalStream({
         qc.setQueryData(key, { ...oldData, [tid]: merged });
       }
 
+      // bot-trades + trades caches — each holds an array of trade rows.
+      // Patch any row that's open on this token so portfolio + bot detail
+      // reflect live P&L without any refetch.
+      if (p.price_usd != null) {
+        const patchTradeArray = (
+          oldData: any,
+        ): { next: any; touched: boolean } => {
+          if (!Array.isArray(oldData)) return { next: oldData, touched: false };
+          let touched = false;
+          const next = oldData.map((row: any) => {
+            if (row?.token_id !== tid || row?.status !== "open") return row;
+            touched = true;
+            const entry = row.entry || {};
+            const entryPrice = Number(entry.price_usd || 0);
+            const amount = Number(entry.amount_tokens || 0);
+            const unrealized =
+              entryPrice > 0 ? (p.price_usd - entryPrice) * amount : 0;
+            const unrealizedPct =
+              entryPrice > 0 ? (p.price_usd / entryPrice - 1) * 100 : 0;
+            return {
+              ...row,
+              current_price_usd: p.price_usd,
+              unrealized_pnl_usd: Number(unrealized.toFixed(2)),
+              unrealized_pnl_pct: Number(unrealizedPct.toFixed(2)),
+            };
+          });
+          return { next, touched };
+        };
+
+        for (const queryKey of [["bot-trades"], ["trades"]]) {
+          const rows = qc.getQueriesData<any>({ queryKey, exact: false });
+          for (const [key, oldData] of rows) {
+            const { next, touched } = patchTradeArray(oldData);
+            if (touched) qc.setQueryData(key, next);
+          }
+        }
+
+        // P&L summary: derive a partial patch so the cards move in real time
+        // (total unrealized + total equity). The numbers converge with the
+        // backend on the next periodic refetch.
+        const pnlEntries = qc.getQueriesData<any>({
+          queryKey: ["pnl-summary"],
+          exact: false,
+        });
+        for (const [key, oldPnl] of pnlEntries) {
+          if (!oldPnl || typeof oldPnl !== "object") continue;
+          // Walk the just-patched open bot + sys trades to recompute totals.
+          let unrealized = 0;
+          let openCount = 0;
+          for (const qk of [["bot-trades"], ["trades"]]) {
+            const arrs = qc.getQueriesData<any>({ queryKey: qk, exact: false });
+            for (const [, data] of arrs) {
+              if (!Array.isArray(data)) continue;
+              for (const row of data) {
+                if (row?.status !== "open") continue;
+                openCount += 1;
+                const u = Number(row?.unrealized_pnl_usd ?? 0);
+                if (Number.isFinite(u)) unrealized += u;
+              }
+            }
+          }
+          qc.setQueryData(key, {
+            ...oldPnl,
+            unrealized_pnl_usd: Number(unrealized.toFixed(2)),
+            open_positions: openCount,
+          });
+        }
+      }
+
       // token-detail queries hold a single token dict (or {token: {...}} wrapper)
       const tdQueries = qc.getQueriesData<any>({
         queryKey: ["token-detail", tid],
@@ -167,10 +256,60 @@ export function useSignalStream({
       }
     };
 
+    const invalidateBots = () => {
+      qc.invalidateQueries({ queryKey: ["bots"], exact: false });
+      qc.invalidateQueries({ queryKey: ["bot-trades"], exact: false });
+      // Bot trades now show up in the portfolio feed too
+      qc.invalidateQueries({ queryKey: ["trades"], exact: false });
+      qc.invalidateQueries({ queryKey: ["pnl-summary"] });
+    };
+
+    es.addEventListener("bot.trade.opened", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        console.log("[SSE] bot.trade.opened", data);
+        invalidateBots();
+      } catch (err) {
+        console.error("[SSE] parse error bot open:", err);
+      }
+    });
+
+    es.addEventListener("bot.trade.closed", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        console.log("[SSE] bot.trade.closed", data);
+        invalidateBots();
+      } catch (err) {
+        console.error("[SSE] parse error bot close:", err);
+      }
+    });
+
+    es.addEventListener("bot.updated", () => {
+      invalidateBots();
+    });
+
+    es.addEventListener("swap", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        if (typeof window !== "undefined" && data?.token_id) {
+          window.dispatchEvent(
+            new CustomEvent("coven:swap", { detail: data }),
+          );
+        }
+      } catch (err) {
+        console.error("[SSE] parse error swap:", err);
+      }
+    });
+
     es.addEventListener("price.update", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
         applyPriceUpdate(data);
+        if (typeof window !== "undefined" && data?.token_id) {
+          window.dispatchEvent(
+            new CustomEvent("coven:price", { detail: data }),
+          );
+        }
       } catch (err) {
         console.error("[SSE] parse error price:", err);
       }

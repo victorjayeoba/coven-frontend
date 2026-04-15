@@ -211,7 +211,13 @@ export function TokenDetailDrawer() {
               ))}
             </div>
           </div>
-          <TokenPriceChart candlesRaw={candles} markers={chartMarkers} height={320} />
+          <TokenPriceChart
+            candlesRaw={candles}
+            markers={chartMarkers}
+            height={320}
+            tokenId={tokenId ?? undefined}
+            intervalMinutes={interval}
+          />
         </div>
 
         {/* Stat grid */}

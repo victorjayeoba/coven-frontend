@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ArrowsIn, Graph, LinkSimple, UsersThree, X } from "@phosphor-icons/react";
 import { WalletGraph } from "@/components/graph/WalletGraph";
 import { WalletDetail } from "@/components/graph/WalletDetail";
@@ -21,11 +22,28 @@ const CLUSTER_COLORS = [
 ];
 
 export default function GraphPage() {
+  const params = useSearchParams();
+  const initialCabal = (() => {
+    const raw = params.get("cabal");
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
+
   const [chain, setChain] = useState<ChainFilter>("all");
   const [cabalsOnly, setCabalsOnly] = useState(true);
-  const [highlight, setHighlight] = useState<number | null>(null);
+  const [highlight, setHighlight] = useState<number | null>(initialCabal);
   const [selected, setSelected] = useState<string | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
+
+  // Respond to URL changes (e.g. clicking a different cabal while on the page)
+  useEffect(() => {
+    const raw = params.get("cabal");
+    if (raw) {
+      const n = Number(raw);
+      if (Number.isFinite(n)) setHighlight(n);
+    }
+  }, [params]);
 
   const { data, isLoading } = useWalletGraph({
     chain: chain === "all" ? undefined : chain,

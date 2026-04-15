@@ -47,7 +47,7 @@ export function CabalsList() {
             return (
               <li key={c.cluster_id}>
                 <Link
-                  href={`/clusters/${c.cluster_id}`}
+                  href={`/graph?cabal=${c.cluster_id}`}
                   className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-elevated"
                 >
                   <div className="min-w-0 flex-1">
