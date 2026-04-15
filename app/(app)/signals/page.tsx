@@ -192,7 +192,7 @@ export default function SignalsPage() {
                       market={markets?.[r.token_id]}
                       mode={mode}
                       highlighted={globalIdx === 0 && mode === "backtest"}
-                      onClick={() => openDrawer(r.id)}
+                      onClick={() => router.push(`/tokens/${r.token_id}`)}
                     />
                   );
                 })}

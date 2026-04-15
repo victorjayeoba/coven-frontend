@@ -34,6 +34,7 @@ const MAIN = [
 const SECONDARY = [
   { href: "/portfolio", label: "Portfolio", icon: Coins },
   { href: "/notifications", label: "Notifications", icon: PaperPlaneTilt },
+  { href: "/settings", label: "Settings", icon: SlidersHorizontal },
 ];
 
 export function Sidebar() {
