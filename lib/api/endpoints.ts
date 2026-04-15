@@ -62,6 +62,8 @@ export const endpoints = {
   resetBalance: async () => (await api.post("/balance/reset")).data,
   trending: async (chain: string) =>
     (await api.get("/tokens/trending", { params: { chain } })).data,
+  movers: async (chains: string = "solana,bsc", limit = 30) =>
+    (await api.get("/tokens/movers", { params: { chains, limit } })).data,
 
   // Trades
   listTrades: async (params?: Record<string, any>) =>

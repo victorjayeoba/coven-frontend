@@ -15,10 +15,8 @@ export default function DashboardPage() {
 
       <HeroBanner />
 
-      {/* Primary: full-width signals table */}
       <SignalsTable />
 
-      {/* Secondary rails below */}
       <div className="grid gap-4 lg:grid-cols-2">
         <PositionsList />
         <CabalsList />

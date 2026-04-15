@@ -25,7 +25,7 @@ import { cn } from "@/lib/cn";
 import { WhatsNewPopover } from "./WhatsNewPopover";
 
 const MAIN = [
-  { href: "/", label: "Dashboard", icon: SquaresFour },
+  { href: "/dashboard", label: "Dashboard", icon: SquaresFour },
   { href: "/signals", label: "Signals", icon: Lightning },
   { href: "/graph", label: "Wallet Graph", icon: ShareNetwork },
   { href: "/bots", label: "Bots", icon: Robot },
@@ -51,10 +51,7 @@ export function Sidebar() {
     item: { href: string; label: string; icon: any },
     size: "md" | "sm" = "md",
   ) => {
-    const active =
-      item.href === "/"
-        ? pathname === "/"
-        : pathname.startsWith(item.href);
+    const active = pathname === item.href || pathname.startsWith(item.href + "/");
     const Icon = item.icon;
     return (
       <Link

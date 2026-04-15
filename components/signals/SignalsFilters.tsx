@@ -7,7 +7,7 @@ export type Source = "backtest" | "live";
 export type SortKey = "peak_desc" | "peak_asc" | "conviction_desc" | "recent";
 export type StatusFilter = "all" | "exec" | "partial" | "watch" | "blocked";
 export type ChainFilter = "all" | "solana" | "bsc";
-export type TypeFilter = "all" | "cluster" | "alpha";
+export type TypeFilter = "all" | "cluster" | "alpha" | "rank_stack";
 
 type Props = {
   source: Source;
@@ -105,6 +105,7 @@ export function SignalsFilters({
             { label: "All", value: "all" },
             { label: "Cluster", value: "cluster" },
             { label: "Alpha", value: "alpha" },
+            { label: "Rank", value: "rank_stack" },
           ]}
           onChange={onSignalType}
         />

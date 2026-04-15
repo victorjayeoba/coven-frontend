@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import {
   SignalRow,
   SignalRowHeaders,
+  SignalRowSkeleton,
 } from "@/components/signals/SignalRow";
 import {
   SignalsFilters,
@@ -163,9 +164,11 @@ export default function SignalsPage() {
             <SignalRowHeaders mode={mode} />
 
             {loading ? (
-              <div className="p-8 text-center text-small text-text-muted">
-                Loading…
-              </div>
+              <ul className="divide-y divide-border">
+                {Array.from({ length: Math.min(pageSize, 8) }).map((_, i) => (
+                  <SignalRowSkeleton key={i} mode={mode} />
+                ))}
+              </ul>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-12 text-center">
                 <Lightning

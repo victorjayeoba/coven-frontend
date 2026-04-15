@@ -1,22 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/sign-in", "/sign-up"];
+// Pages the user should NOT see when already signed in — redirect them to
+// the dashboard so they don't re-auth. Everything else is public.
+const AUTH_ROUTES = ["/sign-in", "/sign-up"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("coven_session")?.value;
 
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    if (token) {
-      // already signed in → send home
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-    return NextResponse.next();
+  if (token && AUTH_ROUTES.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (!token) {
-    return NextResponse.redirect(new URL("/sign-in", req.url));
-  }
+  // All other pages (landing /, /dashboard, /signals, /tokens, etc.) are
+  // publicly viewable. Auth-gated actions are enforced by the backend.
   return NextResponse.next();
 }
 

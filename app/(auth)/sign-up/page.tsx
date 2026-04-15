@@ -17,7 +17,7 @@ export default function SignUpPage() {
 
   const mutation = useMutation({
     mutationFn: () => signUp(email, password),
-    onSuccess: () => router.push("/"),
+    onSuccess: () => router.push("/dashboard"),
   });
 
   return (

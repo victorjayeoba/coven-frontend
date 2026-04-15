@@ -1,17 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, CaretDown, ArrowsDownUp } from "@phosphor-icons/react";
 import { endpoints } from "@/lib/api/endpoints";
 import { formatUsd } from "@/lib/format";
 import { useBalances } from "@/lib/hooks/useBalances";
+import { useMe } from "@/lib/hooks/useMe";
 import { FundWalletModal } from "@/components/modals/FundWalletModal";
 import { SwapPopover } from "@/components/layout/SwapPopover";
 
 export function TopBar() {
   const [fundOpen, setFundOpen] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
+  const { data: me, isLoading: meLoading } = useMe();
+  const isAuthed = !!me;
   const { data: balancesData } = useBalances();
   const paperBalance = balancesData?.total ?? 0;
   const paperBalances = balancesData?.balances ?? { solana: 0, bsc: 0 };
@@ -28,52 +32,69 @@ export function TopBar() {
 
   return (
     <header className="relative flex h-14 shrink-0 items-center justify-end gap-2 border-b border-border bg-base px-5">
-      {/* Swap button — opens Phantom-style swap popover */}
-      <button
-        type="button"
-        onClick={() => setSwapOpen((o) => !o)}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-small text-text-primary transition-colors hover:border-border-strong hover:bg-elevated"
-      >
-        <ArrowsDownUp size={12} className="text-primary" weight="bold" />
-        <span className="font-medium">Swap</span>
-      </button>
+      {isAuthed ? (
+        <>
+          {/* Swap button — opens Phantom-style swap popover */}
+          <button
+            type="button"
+            onClick={() => setSwapOpen((o) => !o)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-small text-text-primary transition-colors hover:border-border-strong hover:bg-elevated"
+          >
+            <ArrowsDownUp size={12} className="text-primary" weight="bold" />
+            <span className="font-medium">Swap</span>
+          </button>
 
-      {/* Wallet pill with per-network dropdown */}
-      <WalletPill
-        total={walletValue}
-        balances={paperBalances}
-        onFund={() => setFundOpen(true)}
-      />
-      <div className="hidden" />
-      <button
-        type="button"
-        onClick={() => setFundOpen(true)}
-        className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-small transition-colors hover:border-border-strong hover:bg-elevated md:hidden"
-      >
-        <span className="grid h-4 w-4 place-items-center rounded-sm bg-primary-faint">
-          <Wallet size={10} weight="fill" className="text-primary" />
-        </span>
-        <span className="num font-semibold text-text-primary">
-          {formatUsd(walletValue, 2)}
-        </span>
-        <CaretDown size={10} className="text-text-muted" />
-      </button>
+          {/* Wallet pill with per-network dropdown */}
+          <WalletPill
+            total={walletValue}
+            balances={paperBalances}
+            onFund={() => setFundOpen(true)}
+          />
+          <button
+            type="button"
+            onClick={() => setFundOpen(true)}
+            className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-small transition-colors hover:border-border-strong hover:bg-elevated md:hidden"
+          >
+            <span className="grid h-4 w-4 place-items-center rounded-sm bg-primary-faint">
+              <Wallet size={10} weight="fill" className="text-primary" />
+            </span>
+            <span className="num font-semibold text-text-primary">
+              {formatUsd(walletValue, 2)}
+            </span>
+            <CaretDown size={10} className="text-text-muted" />
+          </button>
 
-      {/* Fund Wallet CTA */}
-      <button
-        type="button"
-        onClick={() => setFundOpen(true)}
-        className="h-8 rounded-md bg-primary px-3 text-small font-medium text-base transition-colors hover:bg-primary-hover"
-      >
-        Fund Wallet
-      </button>
+          <button
+            type="button"
+            onClick={() => setFundOpen(true)}
+            className="h-8 rounded-md bg-primary px-3 text-small font-medium text-base transition-colors hover:bg-primary-hover"
+          >
+            Fund Wallet
+          </button>
 
-      <FundWalletModal open={fundOpen} onClose={() => setFundOpen(false)} />
-      <SwapPopover
-        open={swapOpen}
-        onClose={() => setSwapOpen(false)}
-        onOpenFund={() => setFundOpen(true)}
-      />
+          <FundWalletModal open={fundOpen} onClose={() => setFundOpen(false)} />
+          <SwapPopover
+            open={swapOpen}
+            onClose={() => setSwapOpen(false)}
+            onOpenFund={() => setFundOpen(true)}
+          />
+        </>
+      ) : (
+        <div className={`flex items-center gap-2 transition-opacity ${meLoading ? "opacity-0" : "opacity-100"}`}>
+          <Link
+            href="/sign-in"
+            className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-small font-medium text-text-primary transition-colors hover:border-border-strong hover:bg-elevated"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/sign-up"
+            className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-small font-semibold text-base transition-colors hover:bg-primary-hover"
+          >
+            Sign up
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

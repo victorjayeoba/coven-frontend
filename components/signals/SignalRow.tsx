@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/Badge";
 import { TokenLogo } from "@/components/ui/TokenLogo";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { formatPct, formatRelativeTime, formatUsd } from "@/lib/format";
 import type { TokenMarket } from "@/lib/hooks/useTokenMarkets";
 import { cn } from "@/lib/cn";
@@ -183,6 +184,27 @@ export function SignalRow({
               </span>
             );
           }
+          if (row.signal_type === "rank_stack") {
+            const count = Number(row.topics_count ?? 0);
+            const bestJump = Number(row.best_rank_jump ?? 0);
+            const topicLabels: string[] = Array.isArray(row.topics)
+              ? row.topics.map((t: any) => t.label || t.topic).slice(0, 3)
+              : [];
+            return (
+              <span
+                className="num inline-flex items-center gap-1 rounded-sm bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-warning"
+                title={
+                  topicLabels.length
+                    ? `Stacked on: ${topicLabels.join(", ")}` +
+                      (bestJump > 0 ? ` · jumped ${bestJump}` : "")
+                    : "Multi-topic rank signal"
+                }
+              >
+                🔥 {count} topics
+                {bestJump >= 10 ? ` · ↑${bestJump}` : ""}
+              </span>
+            );
+          }
           return (
             <span className="num inline-flex items-center rounded-sm bg-elevated px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-text-secondary">
               #{row.cluster_id ?? "—"} · {row.cluster_active_count}/
@@ -214,6 +236,35 @@ export function SignalRow({
       <div className="flex justify-end">
         <Badge variant={statusVariant}>{row.status ?? "watch"}</Badge>
       </div>
+    </li>
+  );
+}
+
+export function SignalRowSkeleton({ mode }: { mode: SignalRowMode }) {
+  return (
+    <li
+      className={cn(
+        "grid items-center gap-2 px-3 py-2.5",
+        SIGNAL_ROW_GRID,
+      )}
+    >
+      <Skeleton w={14} h={12} />
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Skeleton w={28} h={28} rounded="full" />
+        <div className="min-w-0 space-y-1.5">
+          <Skeleton w={90} h={12} />
+          <Skeleton w={64} h={9} />
+        </div>
+      </div>
+      <div className="flex justify-end"><Skeleton w={56} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={40} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={46} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={60} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={56} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={60} h={12} /></div>
+      <div className="flex justify-end"><Skeleton w={48} h={16} rounded="sm" /></div>
+      <div className="flex justify-end"><Skeleton w={30} h={14} /></div>
+      <div className="flex justify-end"><Skeleton w={52} h={16} rounded="sm" /></div>
     </li>
   );
 }
