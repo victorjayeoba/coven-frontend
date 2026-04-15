@@ -184,7 +184,7 @@ export default function PortfolioPage() {
       {/* Chart + Allocation */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-border bg-surface lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border px-4 py-2.5">
             <div>
               <div className="text-body font-semibold text-text-primary">
                 Equity Curve
@@ -193,7 +193,7 @@ export default function PortfolioPage() {
                 Cumulative paper equity over time
               </div>
             </div>
-            <div className="flex items-center gap-1 rounded-md border border-border bg-input p-0.5">
+            <div className="flex items-center gap-1 rounded-md border border-border bg-input p-0.5 w-fit">
               {RANGES.map((r) => (
                 <button
                   key={r}

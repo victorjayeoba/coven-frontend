@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, CaretDown } from "@phosphor-icons/react";
+import { Wallet, CaretDown, ArrowsDownUp } from "@phosphor-icons/react";
 import { endpoints } from "@/lib/api/endpoints";
 import { formatUsd } from "@/lib/format";
 import { useBalances } from "@/lib/hooks/useBalances";
 import { FundWalletModal } from "@/components/modals/FundWalletModal";
+import { SwapPopover } from "@/components/layout/SwapPopover";
 
 export function TopBar() {
   const [fundOpen, setFundOpen] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false);
   const { data: balancesData } = useBalances();
   const paperBalance = balancesData?.total ?? 0;
   const paperBalances = balancesData?.balances ?? { solana: 0, bsc: 0 };
@@ -26,6 +28,16 @@ export function TopBar() {
 
   return (
     <header className="relative flex h-14 shrink-0 items-center justify-end gap-2 border-b border-border bg-base px-5">
+      {/* Swap button — opens Phantom-style swap popover */}
+      <button
+        type="button"
+        onClick={() => setSwapOpen((o) => !o)}
+        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-small text-text-primary transition-colors hover:border-border-strong hover:bg-elevated"
+      >
+        <ArrowsDownUp size={12} className="text-primary" weight="bold" />
+        <span className="font-medium">Swap</span>
+      </button>
+
       {/* Wallet pill with per-network dropdown */}
       <WalletPill
         total={walletValue}
@@ -57,6 +69,11 @@ export function TopBar() {
       </button>
 
       <FundWalletModal open={fundOpen} onClose={() => setFundOpen(false)} />
+      <SwapPopover
+        open={swapOpen}
+        onClose={() => setSwapOpen(false)}
+        onOpenFund={() => setFundOpen(true)}
+      />
     </header>
   );
 }

@@ -47,14 +47,14 @@ export function SignalsTable() {
 
   return (
     <div className="rounded-lg border border-border bg-surface">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Lightning size={14} weight="fill" className="text-primary" />
           <span className="text-h2 font-semibold text-text-primary">
             Signal Screener
           </span>
           {mode === "live" ? (
-            <span className="ml-1 inline-flex items-center gap-1 rounded-sm bg-primary-faint px-1.5 py-0.5 text-micro font-medium text-primary">
+            <span className="ml-1 inline-flex items-center gap-1 rounded-sm bg-primary-faint px-1.5 py-0.5 text-[10px] font-medium text-primary">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -62,7 +62,7 @@ export function SignalsTable() {
               LIVE
             </span>
           ) : (
-            <span className="ml-1 rounded-sm bg-elevated px-1.5 py-0.5 text-micro font-medium text-text-secondary">
+            <span className="ml-1 rounded-sm bg-elevated px-1.5 py-0.5 text-[10px] font-medium text-text-secondary whitespace-nowrap">
               BACKTEST · 7D
             </span>
           )}
@@ -70,7 +70,7 @@ export function SignalsTable() {
         </div>
         <Link
           href="/signals"
-          className="inline-flex items-center gap-1 text-small text-text-secondary hover:text-text-primary"
+          className="inline-flex shrink-0 items-center gap-1 text-small text-text-secondary hover:text-text-primary"
         >
           View all <ArrowRight size={12} />
         </Link>

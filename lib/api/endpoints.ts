@@ -72,6 +72,8 @@ export const endpoints = {
   pnlSummary: async () => (await api.get("/trades/pnl")).data,
   closeTrade: async (id: string) =>
     (await api.post(`/trades/${id}/close`)).data,
+  openTrade: async (payload: { token_id: string; size_usd: number; symbol?: string }) =>
+    (await api.post("/trades/open", payload)).data,
 
   // Backtests
   listBacktests: async (params?: Record<string, any>) =>

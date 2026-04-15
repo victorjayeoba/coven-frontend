@@ -138,7 +138,13 @@ export default function BotsPage() {
       )}
 
       {/* Grid */}
-      {bots.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-48 rounded-xl border border-border bg-surface" />
+          ))}
+        </div>
+      ) : bots.length === 0 ? (
         <EmptyState onCreate={() => setModalOpen(true)} />
       ) : filtered.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-10 text-center text-small text-text-muted">

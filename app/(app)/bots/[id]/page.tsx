@@ -272,10 +272,12 @@ export default function BotDetailPage() {
             No trades yet. When this bot fires, paper trades will appear here.
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {trades.slice(0, 50).map((t: any) => (
-              <TradeRow key={t.id} trade={t} />
-            ))}
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px] divide-y divide-border">
+              {trades.slice(0, 50).map((t: any) => (
+                <TradeRow key={t.id} trade={t} />
+              ))}
+            </div>
           </div>
         )}
       </div>

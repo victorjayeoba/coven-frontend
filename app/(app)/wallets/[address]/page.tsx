@@ -136,100 +136,123 @@ export default function WalletPage({
       </div>
 
       {/* HERO */}
-      <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 600px 200px at 0% 0%, rgba(60,196,123,0.08), transparent 60%)",
-          }}
-        />
-
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
+      {isLoading ? (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5 animate-pulse">
           <div className="flex items-start gap-4">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-primary/30 bg-primary-faint">
-              <WalletIcon size={20} weight="fill" className="text-primary" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="num text-h1 font-semibold text-text-primary">
-                  {formatAddress(address, 8, 6)}
-                </h1>
-                <button
-                  onClick={copy}
-                  className="grid h-7 w-7 place-items-center rounded-md text-text-muted hover:bg-elevated hover:text-text-primary"
-                  title="Copy address"
-                >
-                  {copied ? (
-                    <Check size={12} weight="bold" className="text-primary" />
-                  ) : (
-                    <Copy size={12} />
-                  )}
-                </button>
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-micro uppercase tracking-wider text-text-secondary">
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      CHAIN_DOT[chain] ?? "bg-text-muted",
-                    )}
-                  />
-                  {chain}
-                </span>
-                {cluster && (
-                  <Link
-                    href={`/clusters/${cluster.cluster_id}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary-faint px-2 py-0.5 text-micro uppercase tracking-wider text-primary hover:underline"
-                  >
-                    <UsersThree size={10} weight="fill" /> Cabal #
-                    {cluster.cluster_id}
-                  </Link>
-                )}
-                <span className="text-micro text-text-muted">
-                  {positions.length} positions · {neighbors.length} connections
-                </span>
-              </div>
+            <div className="h-12 w-12 rounded-full bg-border" />
+            <div className="space-y-3 flex-1">
+              <div className="h-8 w-1/3 bg-border rounded" />
+              <div className="h-4 w-1/2 bg-border rounded" />
             </div>
           </div>
-
-          {explorerUrl && (
-            <a
-              href={explorerUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-3 text-small text-text-primary transition-colors hover:bg-elevated"
-            >
-              {explorerName(chain)}
-              <ArrowSquareOut size={12} weight="bold" />
-            </a>
-          )}
         </div>
-      </div>
+      ) : (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 600px 200px at 0% 0%, rgba(60,196,123,0.08), transparent 60%)",
+            }}
+          />
+
+          <div className="relative flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-primary/30 bg-primary-faint">
+                <WalletIcon size={20} weight="fill" className="text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="num text-h1 font-semibold text-text-primary">
+                    {formatAddress(address, 8, 6)}
+                  </h1>
+                  <button
+                    onClick={copy}
+                    className="grid h-7 w-7 place-items-center rounded-md text-text-muted hover:bg-elevated hover:text-text-primary"
+                    title="Copy address"
+                  >
+                    {copied ? (
+                      <Check size={12} weight="bold" className="text-primary" />
+                    ) : (
+                      <Copy size={12} />
+                    )}
+                  </button>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-micro uppercase tracking-wider text-text-secondary">
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        CHAIN_DOT[chain] ?? "bg-text-muted",
+                      )}
+                    />
+                    {chain}
+                  </span>
+                  {cluster && (
+                    <Link
+                      href={`/clusters/${cluster.cluster_id}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-primary-faint px-2 py-0.5 text-micro uppercase tracking-wider text-primary hover:underline"
+                    >
+                      <UsersThree size={10} weight="fill" /> Cabal #
+                      {cluster.cluster_id}
+                    </Link>
+                  )}
+                  <span className="text-micro text-text-muted">
+                    {positions.length} positions · {neighbors.length} connections
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {explorerUrl && (
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-3 text-small text-text-primary transition-colors hover:bg-elevated"
+              >
+                {explorerName(chain)}
+                <ArrowSquareOut size={12} weight="bold" />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* STATS GRID */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-4">
-        <StatCell
-          label="Alpha score"
-          value={alpha.toFixed(2)}
-          accent={alpha > 1 ? "gain" : undefined}
-        />
-        <StatCell
-          label="Total profit"
-          value={formatUsd(totalProfit)}
-          accent={totalProfit >= 0 ? "gain" : "loss"}
-        />
-        <StatCell
-          label="Current portfolio"
-          value={formatUsd(totalBalance)}
-        />
-        <StatCell
-          label="Avg P&L (tracked)"
-          value={`${avgMarginPct >= 0 ? "+" : ""}${avgMarginPct.toFixed(1)}%`}
-          accent={avgMarginPct >= 0 ? "gain" : "loss"}
-        />
-      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-4 animate-pulse">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-surface px-4 py-3 space-y-2">
+              <div className="h-3 w-1/2 bg-border rounded" />
+              <div className="h-6 w-3/4 bg-border rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-4">
+          <StatCell
+            label="Alpha score"
+            value={alpha.toFixed(2)}
+            accent={alpha > 1 ? "gain" : undefined}
+          />
+          <StatCell
+            label="Total profit"
+            value={formatUsd(totalProfit)}
+            accent={totalProfit >= 0 ? "gain" : "loss"}
+          />
+          <StatCell
+            label="Current portfolio"
+            value={formatUsd(totalBalance)}
+          />
+          <StatCell
+            label="Avg P&L (tracked)"
+            value={`${avgMarginPct >= 0 ? "+" : ""}${avgMarginPct.toFixed(1)}%`}
+            accent={avgMarginPct >= 0 ? "gain" : "loss"}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* POSITIONS TABLE */}
@@ -246,108 +269,112 @@ export default function WalletPage({
             </div>
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_110px_110px_110px_80px] items-center gap-3 border-b border-border bg-base/40 px-4 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
-            <div>Token</div>
-            <div className="text-right">Cost</div>
-            <div className="text-right">Value</div>
-            <div className="text-right">P&L</div>
-            <div className="text-right">Margin</div>
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px]">
+              <div className="grid grid-cols-[minmax(0,1fr)_110px_110px_110px_80px] items-center gap-3 border-b border-border bg-base/40 px-4 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
+                <div>Token</div>
+                <div className="text-right">Cost</div>
+                <div className="text-right">Value</div>
+                <div className="text-right">P&L</div>
+                <div className="text-right">Margin</div>
+              </div>
+
+              {isLoading ? (
+                <div className="p-6 text-center text-small text-text-muted">
+                  Loading…
+                </div>
+              ) : sortedPositions.length === 0 ? (
+                <div className="p-6 text-center text-small text-text-muted">
+                  No positions.
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {sortedPositions
+                    .slice(posPage * posPageSize, (posPage + 1) * posPageSize)
+                    .map((p: any, i: number) => {
+                    const pnl = p._pnl;
+                    const pct = p._pct;
+                    return (
+                      <li
+                        key={p.token_id ?? i}
+                        className="grid grid-cols-[minmax(0,1fr)_110px_110px_110px_80px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated"
+                      >
+                        <Link
+                          href={`/tokens/${p.token_id}`}
+                          className="flex min-w-0 items-center gap-2.5 group"
+                        >
+                          <TokenLogo
+                            symbol={p.symbol}
+                            chain={p.chain}
+                            tokenId={p.token_id}
+                            size={24}
+                          />
+                          <div className="min-w-0">
+                            <div className="truncate text-body font-semibold text-text-primary group-hover:text-primary">
+                              ${p.symbol ?? "?"}
+                            </div>
+                            <div className="truncate text-micro text-text-muted">
+                              {p.chain}
+                            </div>
+                          </div>
+                        </Link>
+
+                        {/* Cost (entry value) */}
+                        <div className="num text-right text-small text-text-secondary">
+                          {p._cost !== null && p._cost > 0
+                            ? formatUsd(p._cost)
+                            : "—"}
+                        </div>
+
+                        {/* Value (current balance) */}
+                        <div className="num text-right text-small text-text-primary">
+                          {p._balance > 0 ? formatUsd(p._balance) : "—"}
+                        </div>
+
+                        {/* P&L = realized + unrealized */}
+                        <div className="text-right">
+                          {pnl !== null ? (
+                            <span
+                              className={cn(
+                                "num text-small font-semibold",
+                                pnl >= 0 ? "text-gain" : "text-loss",
+                              )}
+                            >
+                              {pnl >= 0 ? "+" : ""}
+                              {formatUsd(pnl)}
+                            </span>
+                          ) : (
+                            <span
+                              className="text-micro text-text-muted"
+                              title="No P&L data from AVE for this token"
+                            >
+                              open
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Margin % */}
+                        <div className="text-right">
+                          {pct !== null ? (
+                            <span
+                              className={cn(
+                                "num text-small font-semibold",
+                                pct >= 0 ? "text-gain" : "text-loss",
+                              )}
+                            >
+                              {formatPct(pct)}
+                            </span>
+                          ) : (
+                            <span className="text-micro text-text-muted">—</span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
-
-          {isLoading ? (
-            <div className="p-6 text-center text-small text-text-muted">
-              Loading…
-            </div>
-          ) : sortedPositions.length === 0 ? (
-            <div className="p-6 text-center text-small text-text-muted">
-              No positions.
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {sortedPositions
-                .slice(posPage * posPageSize, (posPage + 1) * posPageSize)
-                .map((p: any, i: number) => {
-                const pnl = p._pnl;
-                const pct = p._pct;
-                return (
-                  <li
-                    key={p.token_id ?? i}
-                    className="grid grid-cols-[minmax(0,1fr)_110px_110px_110px_80px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-elevated"
-                  >
-                    <Link
-                      href={`/tokens/${p.token_id}`}
-                      className="flex min-w-0 items-center gap-2.5 group"
-                    >
-                      <TokenLogo
-                        symbol={p.symbol}
-                        chain={p.chain}
-                        tokenId={p.token_id}
-                        size={24}
-                      />
-                      <div className="min-w-0">
-                        <div className="truncate text-body font-semibold text-text-primary group-hover:text-primary">
-                          ${p.symbol ?? "?"}
-                        </div>
-                        <div className="truncate text-micro text-text-muted">
-                          {p.chain}
-                        </div>
-                      </div>
-                    </Link>
-
-                    {/* Cost (entry value) */}
-                    <div className="num text-right text-small text-text-secondary">
-                      {p._cost !== null && p._cost > 0
-                        ? formatUsd(p._cost)
-                        : "—"}
-                    </div>
-
-                    {/* Value (current balance) */}
-                    <div className="num text-right text-small text-text-primary">
-                      {p._balance > 0 ? formatUsd(p._balance) : "—"}
-                    </div>
-
-                    {/* P&L = realized + unrealized */}
-                    <div className="text-right">
-                      {pnl !== null ? (
-                        <span
-                          className={cn(
-                            "num text-small font-semibold",
-                            pnl >= 0 ? "text-gain" : "text-loss",
-                          )}
-                        >
-                          {pnl >= 0 ? "+" : ""}
-                          {formatUsd(pnl)}
-                        </span>
-                      ) : (
-                        <span
-                          className="text-micro text-text-muted"
-                          title="No P&L data from AVE for this token"
-                        >
-                          open
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Margin % */}
-                    <div className="text-right">
-                      {pct !== null ? (
-                        <span
-                          className={cn(
-                            "num text-small font-semibold",
-                            pct >= 0 ? "text-gain" : "text-loss",
-                          )}
-                        >
-                          {formatPct(pct)}
-                        </span>
-                      ) : (
-                        <span className="text-micro text-text-muted">—</span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
           {sortedPositions.length > 0 && (
             <Pagination
               total={sortedPositions.length}

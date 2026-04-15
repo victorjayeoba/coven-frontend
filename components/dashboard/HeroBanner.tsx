@@ -28,7 +28,7 @@ function Stat({
       <div className="label-micro">{label}</div>
       <div
         className={cn(
-          "num mt-1.5 text-[22px] font-semibold leading-none text-text-primary",
+          "num mt-1.5 text-lg md:text-[22px] font-semibold leading-none text-text-primary",
           valueClass,
         )}
       >
@@ -96,7 +96,7 @@ export function HeroBanner() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 p-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6 p-4">
           <Stat label="Smart wallets" value={walletsTracked} />
           <Stat label="Cabals" value={clusterCount} />
           <Stat
@@ -127,7 +127,7 @@ export function HeroBanner() {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 p-4">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6 p-4">
           <Stat
             label="Best trade"
             value={formatPct(best)}

@@ -72,12 +72,12 @@ export default function TokenPage({
   const [tab, setTab] = useState<Tab>("signals");
   const [copied, setCopied] = useState(false);
 
-  const { data: detail } = useTokenDetail(tokenId);
+  const { data: detail, isLoading: isDetailLoading } = useTokenDetail(tokenId);
   const { data: candles } = useTokenCandles(tokenId, interval, 300);
-  const { data: risk } = useTokenRisk(tokenId);
-  const { data: signals } = useTokenSignals(tokenId);
-  const { data: smartHolders } = useTokenSmartHolders(tokenId);
-  const { data: dex } = useDexscreenerToken(tokenId, { refetchMs: 10_000 });
+  const { data: risk, isLoading: isRiskLoading } = useTokenRisk(tokenId);
+  const { data: signals, isLoading: isSignalsLoading } = useTokenSignals(tokenId);
+  const { data: smartHolders, isLoading: isHoldersLoading } = useTokenSmartHolders(tokenId);
+  const { data: dex, isLoading: isDexLoading } = useDexscreenerToken(tokenId, { refetchMs: 10_000 });
 
   const token = useMemo(() => {
     if (!detail) return null;
@@ -205,114 +205,127 @@ export default function TokenPage({
       </div>
 
       {/* HERO */}
-      <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 600px 200px at 0% 0%, rgba(60,196,123,0.08), transparent 60%)",
-          }}
-        />
+      {isDetailLoading && isDexLoading ? (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5 animate-pulse">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="h-12 w-12 rounded-full bg-border" />
+            <div className="space-y-3 flex-1 w-full">
+              <div className="h-8 w-1/3 bg-border rounded" />
+              <div className="h-4 w-1/2 bg-border rounded" />
+              <div className="h-6 w-1/4 bg-border rounded mt-2" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 600px 200px at 0% 0%, rgba(60,196,123,0.08), transparent 60%)",
+            }}
+          />
 
-        <div className="relative flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <TokenLogo
-              symbol={symbol}
-              chain={chain}
-              tokenId={tokenId}
-              logoUrl={token?.logo_url}
-              size={48}
-            />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-h1 font-semibold text-text-primary">
-                  ${symbol}
-                </h1>
-                {name && (
-                  <span className="text-body text-text-secondary">{name}</span>
-                )}
-                <span className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-micro uppercase tracking-wider text-text-secondary">
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      CHAIN_DOT[chain ?? ""] ?? "bg-text-muted",
-                    )}
-                  />
-                  {chain}
-                </span>
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                <button
-                  onClick={copy}
-                  className="inline-flex items-center gap-1 text-micro text-text-muted hover:text-text-primary"
-                  title="Copy contract"
-                >
-                  <span className="num">{formatAddress(contract, 6, 6)}</span>
-                  {copied ? (
-                    <Check size={10} weight="bold" className="text-primary" />
-                  ) : (
-                    <Copy size={10} />
+          <div className="relative flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center md:items-start gap-4">
+              <TokenLogo
+                symbol={symbol}
+                chain={chain}
+                tokenId={tokenId}
+                logoUrl={token?.logo_url}
+                size={48}
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-h1 font-semibold text-text-primary">
+                    ${symbol}
+                  </h1>
+                  {name && (
+                    <span className="text-body text-text-secondary">{name}</span>
                   )}
-                </button>
-                {explorerUrl && (
-                  <a
-                    href={explorerUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <span className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-micro uppercase tracking-wider text-text-secondary">
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        CHAIN_DOT[chain ?? ""] ?? "bg-text-muted",
+                      )}
+                    />
+                    {chain}
+                  </span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={copy}
                     className="inline-flex items-center gap-1 text-micro text-text-muted hover:text-text-primary"
+                    title="Copy contract"
                   >
-                    {explorerName(chain)}
-                    <ArrowSquareOut size={10} weight="bold" />
-                  </a>
-                )}
-              </div>
-              <div className="mt-3 flex items-baseline gap-3">
-                <span className="relative inline-flex items-baseline gap-2">
-                  <span
-                    className="relative inline-flex h-1.5 w-1.5 shrink-0 self-center"
-                    title={
-                      useAve
-                        ? "Live — streaming from AVE"
-                        : "Live — polling DexScreener every 10s"
-                    }
-                  >
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                  </span>
-                  <span className="num text-display font-semibold text-text-primary">
-                    {Number.isFinite(price)
-                      ? price < 0.01
-                        ? `$${price.toPrecision(4)}`
-                        : `$${price.toFixed(price < 1 ? 4 : 2)}`
-                      : "—"}
-                  </span>
-                </span>
-                {Number.isFinite(change24h) && (
-                  <span
-                    className={cn(
-                      "num text-body font-semibold",
-                      change24h >= 0 ? "text-gain" : "text-loss",
+                    <span className="num">{formatAddress(contract, 6, 6)}</span>
+                    {copied ? (
+                      <Check size={10} weight="bold" className="text-primary" />
+                    ) : (
+                      <Copy size={10} />
                     )}
-                  >
-                    {formatPct(change24h)} 24h
+                  </button>
+                  {explorerUrl && (
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-micro text-text-muted hover:text-text-primary"
+                    >
+                      {explorerName(chain)}
+                      <ArrowSquareOut size={10} weight="bold" />
+                    </a>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-baseline gap-3">
+                  <span className="relative inline-flex items-baseline gap-2">
+                    <span
+                      className="relative inline-flex h-1.5 w-1.5 shrink-0 self-center"
+                      title={
+                        useAve
+                          ? "Live — streaming from AVE"
+                          : "Live — polling DexScreener every 10s"
+                      }
+                    >
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                    </span>
+                    <span className="num text-display font-semibold text-text-primary">
+                      {Number.isFinite(price)
+                        ? price < 0.01
+                          ? `$${price.toPrecision(4)}`
+                          : `$${price.toFixed(price < 1 ? 4 : 2)}`
+                        : "—"}
+                    </span>
                   </span>
-                )}
-                {Number.isFinite(change1h) && (
-                  <span
-                    className={cn(
-                      "num text-small",
-                      change1h >= 0 ? "text-gain/80" : "text-loss/80",
-                    )}
-                  >
-                    {formatPct(change1h)} 1h
-                  </span>
-                )}
+                  {Number.isFinite(change24h) && (
+                    <span
+                      className={cn(
+                        "num text-body font-semibold",
+                        change24h >= 0 ? "text-gain" : "text-loss",
+                      )}
+                    >
+                      {formatPct(change24h)} 24h
+                    </span>
+                  )}
+                  {Number.isFinite(change1h) && (
+                    <span
+                      className={cn(
+                        "num text-small",
+                        change1h >= 0 ? "text-gain/80" : "text-loss/80",
+                      )}
+                    >
+                      {formatPct(change1h)} 1h
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Low-float warning */}
       {Number.isFinite(mcap) && Number.isFinite(fdv) && fdv > 0 && mcap > 0 && fdv / mcap > 1.5 && (
@@ -327,26 +340,37 @@ export default function TokenPage({
       )}
 
       {/* STATS */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-6">
-        <Stat label="Mcap" value={formatUsd(mcap)} />
-        <Stat label="FDV" value={formatUsd(fdv)} />
-        <Stat label="Liquidity" value={formatUsd(tvl)} />
-        <Stat label="Vol 24h" value={formatUsd(vol24)} />
-        <Stat
-          label="Holders"
-          value={Number.isFinite(holders) ? holders.toLocaleString() : "—"}
-        />
-        <Stat
-          label="Age"
-          value={
-            ageHours === null
-              ? "—"
-              : ageHours < 24
-                ? `${Math.round(ageHours)}h`
-                : `${Math.round(ageHours / 24)}d`
-          }
-        />
-      </div>
+      {isDetailLoading && isDexLoading ? (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 md:grid-cols-6 animate-pulse">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-surface px-4 py-3 space-y-2">
+              <div className="h-3 w-1/2 bg-border rounded" />
+              <div className="h-5 w-3/4 bg-border rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3 md:grid-cols-6">
+          <Stat label="Mcap" value={formatUsd(mcap)} />
+          <Stat label="FDV" value={formatUsd(fdv)} />
+          <Stat label="Liquidity" value={formatUsd(tvl)} />
+          <Stat label="Vol 24h" value={formatUsd(vol24)} />
+          <Stat
+            label="Holders"
+            value={Number.isFinite(holders) ? holders.toLocaleString() : "—"}
+          />
+          <Stat
+            label="Age"
+            value={
+              ageHours === null
+                ? "—"
+                : ageHours < 24
+                  ? `${Math.round(ageHours)}h`
+                  : `${Math.round(ageHours / 24)}d`
+            }
+          />
+        </div>
+      )}
 
       {/* CHART */}
       <div className="overflow-hidden rounded-lg border border-border bg-surface">
@@ -413,7 +437,7 @@ export default function TokenPage({
 
       {/* TABS */}
       <div className="rounded-lg border border-border bg-surface">
-        <div className="flex gap-1 border-b border-border px-4 pt-2">
+        <div className="flex gap-1 border-b border-border px-4 pt-2 overflow-x-auto scrollbar-hide">
           <TabButton
             active={tab === "signals"}
             onClick={() => setTab("signals")}
@@ -499,7 +523,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 rounded-t-md px-3 py-2 text-small font-medium transition-colors",
+        "inline-flex shrink-0 items-center gap-2 rounded-t-md px-3 py-2 text-small font-medium transition-colors",
         active
           ? "border-b-2 border-primary text-text-primary"
           : "text-text-secondary hover:text-text-primary",
@@ -528,62 +552,66 @@ function SignalsPanel({ signals }: { signals: any[] }) {
 
   return (
     <div className="overflow-hidden rounded-md border border-border">
-      <div className="grid grid-cols-[70px_90px_100px_90px_90px_90px] gap-3 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
-        <div>Source</div>
-        <div>Cabal</div>
-        <div className="text-right">Wallets</div>
-        <div className="text-right">Conviction</div>
-        <div className="text-right">Peak P&L</div>
-        <div className="text-right">Detected</div>
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px]">
+          <div className="grid grid-cols-[70px_90px_100px_90px_90px_90px] gap-3 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
+            <div>Source</div>
+            <div>Cabal</div>
+            <div className="text-right">Wallets</div>
+            <div className="text-right">Conviction</div>
+            <div className="text-right">Peak P&L</div>
+            <div className="text-right">Detected</div>
+          </div>
+          <ul className="divide-y divide-border">
+            {pageRows.map((s: any) => (
+              <li
+                key={s.id}
+                className="grid grid-cols-[70px_90px_100px_90px_90px_90px] items-center gap-3 px-3 py-2 text-small transition-colors hover:bg-elevated"
+              >
+                <span
+                  className={cn(
+                    "inline-flex rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                    s.source === "live"
+                      ? "bg-primary-faint text-primary"
+                      : "bg-elevated text-text-secondary",
+                  )}
+                >
+                  {s.source}
+                </span>
+                <span className="text-text-primary">Cabal #{s.cluster_id}</span>
+                <span className="num text-right text-text-secondary">
+                  {s.cluster_active_count}/{s.cluster_size_total}
+                </span>
+                <span
+                  className={cn(
+                    "num text-right font-semibold",
+                    (s.conviction_score ?? 0) >= 70
+                      ? "text-primary"
+                      : (s.conviction_score ?? 0) >= 40
+                        ? "text-warning"
+                        : "text-text-secondary",
+                  )}
+                >
+                  {s.conviction_score ?? 0}
+                </span>
+                <span
+                  className={cn(
+                    "num text-right",
+                    (s.peak_pnl_pct ?? 0) >= 0 ? "text-gain" : "text-loss",
+                  )}
+                >
+                  {s.peak_pnl_pct !== undefined && s.peak_pnl_pct !== null
+                    ? formatPct(s.peak_pnl_pct)
+                    : "—"}
+                </span>
+                <span className="num text-right text-micro text-text-muted">
+                  {s.detected_at ? formatRelativeTime(s.detected_at) : "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-      <ul className="divide-y divide-border">
-        {pageRows.map((s: any) => (
-          <li
-            key={s.id}
-            className="grid grid-cols-[70px_90px_100px_90px_90px_90px] items-center gap-3 px-3 py-2 text-small transition-colors hover:bg-elevated"
-          >
-            <span
-              className={cn(
-                "inline-flex rounded-sm px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-                s.source === "live"
-                  ? "bg-primary-faint text-primary"
-                  : "bg-elevated text-text-secondary",
-              )}
-            >
-              {s.source}
-            </span>
-            <span className="text-text-primary">Cabal #{s.cluster_id}</span>
-            <span className="num text-right text-text-secondary">
-              {s.cluster_active_count}/{s.cluster_size_total}
-            </span>
-            <span
-              className={cn(
-                "num text-right font-semibold",
-                (s.conviction_score ?? 0) >= 70
-                  ? "text-primary"
-                  : (s.conviction_score ?? 0) >= 40
-                    ? "text-warning"
-                    : "text-text-secondary",
-              )}
-            >
-              {s.conviction_score ?? 0}
-            </span>
-            <span
-              className={cn(
-                "num text-right",
-                (s.peak_pnl_pct ?? 0) >= 0 ? "text-gain" : "text-loss",
-              )}
-            >
-              {s.peak_pnl_pct !== undefined && s.peak_pnl_pct !== null
-                ? formatPct(s.peak_pnl_pct)
-                : "—"}
-            </span>
-            <span className="num text-right text-micro text-text-muted">
-              {s.detected_at ? formatRelativeTime(s.detected_at) : "—"}
-            </span>
-          </li>
-        ))}
-      </ul>
       <Pagination
         total={signals.length}
         page={page}
@@ -623,47 +651,51 @@ function HoldersPanel({ holders }: { holders: any[] }) {
 
   return (
     <div className="overflow-hidden rounded-md border border-border">
-      <div className="grid grid-cols-[minmax(0,1fr)_80px_110px_110px_90px] gap-3 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
-        <div>Wallet</div>
-        <div>Cabal</div>
-        <div className="text-right">Balance</div>
-        <div className="text-right">Lifetime P&L</div>
-        <div className="text-right">Alpha</div>
+      <div className="overflow-x-auto">
+        <div className="min-w-[600px]">
+          <div className="grid grid-cols-[minmax(0,1fr)_80px_110px_110px_90px] gap-3 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted">
+            <div>Wallet</div>
+            <div>Cabal</div>
+            <div className="text-right">Balance</div>
+            <div className="text-right">Lifetime P&L</div>
+            <div className="text-right">Alpha</div>
+          </div>
+          <ul className="divide-y divide-border">
+            {pageRows.map((h: any) => (
+              <li
+                key={h.address}
+                className="grid grid-cols-[minmax(0,1fr)_80px_110px_110px_90px] items-center gap-3 px-3 py-2 text-small transition-colors hover:bg-elevated"
+              >
+                <Link
+                  href={`/wallets/${h.address}`}
+                  className="num truncate text-text-primary hover:underline"
+                >
+                  {formatAddress(h.address, 6, 4)}
+                </Link>
+                <span className="text-micro uppercase tracking-wider text-text-secondary">
+                  {h.cluster_id !== null && h.cluster_id !== undefined
+                    ? `#${h.cluster_id}`
+                    : "—"}
+                </span>
+                <span className="num text-right text-text-primary">
+                  {formatUsd(h.balance_usd)}
+                </span>
+                <span
+                  className={cn(
+                    "num text-right font-semibold",
+                    (h.total_profit ?? 0) >= 0 ? "text-gain" : "text-loss",
+                  )}
+                >
+                  {formatUsd(h.total_profit)}
+                </span>
+                <span className="num text-right text-text-secondary">
+                  {Number(h.alpha_score ?? 0).toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-      <ul className="divide-y divide-border">
-        {pageRows.map((h: any) => (
-          <li
-            key={h.address}
-            className="grid grid-cols-[minmax(0,1fr)_80px_110px_110px_90px] items-center gap-3 px-3 py-2 text-small transition-colors hover:bg-elevated"
-          >
-            <Link
-              href={`/wallets/${h.address}`}
-              className="num truncate text-text-primary hover:underline"
-            >
-              {formatAddress(h.address, 6, 4)}
-            </Link>
-            <span className="text-micro uppercase tracking-wider text-text-secondary">
-              {h.cluster_id !== null && h.cluster_id !== undefined
-                ? `#${h.cluster_id}`
-                : "—"}
-            </span>
-            <span className="num text-right text-text-primary">
-              {formatUsd(h.balance_usd)}
-            </span>
-            <span
-              className={cn(
-                "num text-right font-semibold",
-                (h.total_profit ?? 0) >= 0 ? "text-gain" : "text-loss",
-              )}
-            >
-              {formatUsd(h.total_profit)}
-            </span>
-            <span className="num text-right text-text-secondary">
-              {Number(h.alpha_score ?? 0).toFixed(2)}
-            </span>
-          </li>
-        ))}
-      </ul>
       <Pagination
         total={sorted.length}
         page={page}
@@ -772,7 +804,7 @@ function RiskPanel({ risk, token }: { risk: any; token: any }) {
       </div>
 
       {/* Checks */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-2 md:grid-cols-3">
         {rows.map((r) => {
           const state = flag(risk[r.key]);
           const isBad = state === r.bad;
