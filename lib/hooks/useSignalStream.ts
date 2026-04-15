@@ -21,7 +21,9 @@ export function useSignalStream({
   useEffect(() => {
     if (!enabled) return;
 
-    const url = baseUrl ?? "/api/stream/signals";
+    const url =
+      baseUrl ??
+      `${process.env.NEXT_PUBLIC_API_URL || "/api"}/stream/signals`;
 
     console.log("[SSE] connecting to", url);
     const es = new EventSource(url, { withCredentials: true });

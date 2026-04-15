@@ -1,9 +1,11 @@
 import axios from "axios";
 
-// Always go through Next.js's own /api proxy. The rewrite in next.config.js
-// forwards every /api/* request to the real backend (BACKEND_URL env var).
-// This keeps cookies first-party — no cross-domain session breakage.
+// Hits the backend directly. NEXT_PUBLIC_API_URL must include the /api suffix
+// in production (e.g. https://coven-api.discretliaison.com/api).
+// CORS + SameSite=None;Secure cookies are configured on the backend.
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL,
   withCredentials: true,
 });
