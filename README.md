@@ -6,9 +6,9 @@ On-chain alpha, detected and acted on in real time. Coven watches the smart-mone
 
 🏆 **Built for the AVE-CLAW Hackathon** — Coven is powered end-to-end by the [AVE Data API](https://ave.ai). Every signal we publish, every cluster we score, every token we list — the data comes from AVE. We use **11 of the 16** documented REST endpoints plus the live **`multi_tx` WebSocket stream**. Full breakdown in [AVE API usage](#-ave-api-usage--what-we-use-and-why) below.
 
-[🎬 Watch the demo](#-demo) · [🌐 Live site](#) · [⚙️ Backend repo](#)
+[🎬 Watch the demo](#-demo) · [🌐 Live site](https://usecoven.vercel.app/) · [⚙️ Backend repo](https://github.com/victorjayeoba/coven-backend)
 
-> Replace the three links above with your demo video URL, deployed URL, and backend GitHub URL.
+> Replace the demo link above with your demo video URL when ready.
 
 ---
 
@@ -160,7 +160,7 @@ Or a direct video file:
 <video src="path/to/demo.mp4" controls width="100%"></video>
 ```
 
-**Live deployment:** <https://your-deployed-url>
+**Live deployment:** <https://usecoven.vercel.app/>
 **Test account:** `kryptos@gmail.com` / `Test123$`
 
 Walk-through points to call out in the video:
@@ -298,17 +298,20 @@ You'll also need:
 - A **BSCScan API key** (BSC tx polling) — [bscscan.com/apis](https://bscscan.com/apis)
 - A **Telegram bot token** (optional, for alerts) — message [@BotFather](https://t.me/botfather)
 
-### 1. Clone
+### 1. Clone both repos
 
 ```bash
-git clone <your-fork-url> coven
-cd coven
+# Frontend (this repo)
+git clone https://github.com/<your-frontend-fork>.git coven-frontend
+
+# Backend
+git clone https://github.com/victorjayeoba/coven-backend.git coven-backend
 ```
 
 ### 2. Backend
 
 ```bash
-cd backend
+cd coven-backend
 python -m venv .venv
 source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -331,7 +334,7 @@ The backend boots all background jobs (Helius stream, AVE listener, rank poller,
 ### 3. Frontend
 
 ```bash
-cd frontend
+cd ../coven-frontend
 npm install --legacy-peer-deps
 # (--legacy-peer-deps required because we use react-three-fiber@8 with React 18)
 
