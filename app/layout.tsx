@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Fraunces } from "next/font/google";
+import { Space_Grotesk, Fraunces, Geist } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -30,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${fraunces.variable}`}>
+    <html lang="en" className={cn(spaceGrotesk.variable, fraunces.variable, "font-sans", geist.variable)}>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

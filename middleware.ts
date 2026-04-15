@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Pages the user should NOT see when already signed in — redirect them to
-// the dashboard so they don't re-auth. Everything else is public.
+// Pages anyone can hit without a session.
+const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up"];
+
+// Auth pages — bounce already-signed-in users back to the dashboard.
 const AUTH_ROUTES = ["/sign-in", "/sign-up"];
 
 export function middleware(req: NextRequest) {
@@ -12,8 +14,21 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // All other pages (landing /, /dashboard, /signals, /tokens, etc.) are
-  // publicly viewable. Auth-gated actions are enforced by the backend.
+  // Landing + auth screens are always reachable.
+  const isPublic = PUBLIC_PATHS.some(
+    (p) => pathname === p || (p !== "/" && pathname.startsWith(p)),
+  );
+  if (isPublic) return NextResponse.next();
+
+  // Everything else (dashboard + internal routes) requires a session — the
+  // backend endpoints are auth-only, so anonymous users would just see a
+  // half-broken UI. Send them to sign-in with a return URL.
+  if (!token) {
+    const url = new URL("/sign-in", req.url);
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 
