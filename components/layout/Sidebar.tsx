@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import {
   SquaresFour,
   Lightning,
@@ -17,6 +18,7 @@ import {
   Question,
   SignOut,
   List,
+  X,
   PaperPlaneTilt,
 } from "@phosphor-icons/react";
 import { useUIStore } from "@/lib/stores/useUIStore";
@@ -40,8 +42,29 @@ const SECONDARY = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { sidebarCollapsed, toggleSidebar, openPalette } = useUIStore();
+  const {
+    sidebarCollapsed,
+    toggleSidebar,
+    openPalette,
+    mobileSidebarOpen,
+    closeMobileSidebar,
+  } = useUIStore();
+  // On mobile, "collapsed" never applies — the drawer is either open or off-screen.
   const collapsed = sidebarCollapsed;
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [pathname, closeMobileSidebar]);
+
+  // Lock body scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = mobileSidebarOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileSidebarOpen]);
 
   const logoutMutation = useMutation({
     mutationFn: logout,
@@ -75,12 +98,40 @@ export function Sidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "flex h-screen shrink-0 flex-col border-r border-border bg-sidebar transition-[width]",
-        collapsed ? "w-14" : "w-56",
-      )}
-    >
+    <>
+      {/* Mobile backdrop */}
+      <div
+        onClick={closeMobileSidebar}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity md:hidden",
+          mobileSidebarOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0",
+        )}
+      />
+
+      <aside
+        className={cn(
+          "flex h-screen shrink-0 flex-col border-r border-border bg-sidebar",
+          // Desktop: takes up flex space, supports collapsed mode.
+          "md:relative md:transition-[width]",
+          collapsed ? "md:w-14" : "md:w-56",
+          // Mobile: fixed off-canvas drawer.
+          "fixed inset-y-0 left-0 z-50 w-64 transition-transform",
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
+          "md:translate-x-0",
+        )}
+      >
+      {/* Mobile-only close button */}
+      <button
+        type="button"
+        onClick={closeMobileSidebar}
+        className="absolute right-2 top-3 grid h-8 w-8 place-items-center rounded-md text-text-muted hover:bg-elevated hover:text-text-primary md:hidden"
+        aria-label="Close menu"
+      >
+        <X size={16} />
+      </button>
+
       {/* Brand */}
       <div
         className={cn(
@@ -164,12 +215,12 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Collapse toggle */}
+      {/* Collapse toggle (desktop only — mobile uses the X close button) */}
       <button
         type="button"
         onClick={toggleSidebar}
         className={cn(
-          "flex h-9 items-center gap-2 border-t border-border text-small text-text-muted transition-colors hover:bg-elevated hover:text-text-secondary",
+          "hidden h-9 items-center gap-2 border-t border-border text-small text-text-muted transition-colors hover:bg-elevated hover:text-text-secondary md:flex",
           collapsed ? "justify-center px-0" : "px-4",
         )}
         title={collapsed ? "Expand menu" : "Collapse menu"}
@@ -178,5 +229,6 @@ export function Sidebar() {
         {!collapsed && <span>Collapse menu</span>}
       </button>
     </aside>
+    </>
   );
 }

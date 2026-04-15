@@ -147,7 +147,7 @@ export function SignalsTable() {
       </div>
 
       <div className="overflow-x-auto">
-        <div className="min-w-[980px]">
+        <div className="md:min-w-[980px]">
           <MoversHeaders />
 
           {isLoading ? (
@@ -222,7 +222,7 @@ function MoversHeaders() {
   return (
     <div
       className={cn(
-        "grid items-center gap-2 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted",
+        "hidden items-center gap-2 border-b border-border bg-base/40 px-3 py-2 text-micro font-medium uppercase tracking-wider text-text-muted md:grid",
         MOVERS_GRID,
       )}
     >
@@ -254,44 +254,102 @@ function MoverRow({
   return (
     <li
       onClick={onClick}
-      className={cn(
-        "grid cursor-pointer items-center gap-2 px-3 py-2.5 transition-colors hover:bg-elevated",
-        MOVERS_GRID,
-      )}
+      className="cursor-pointer transition-colors hover:bg-elevated"
     >
-      <span className="num text-small font-semibold text-text-muted">
-        {rank}
-      </span>
-
-      <div className="flex min-w-0 items-center gap-2.5">
-        <TokenLogo
-          symbol={symbol}
-          chain={row.chain}
-          tokenId={row.token_id}
-          logoUrl={row.logo_url ?? undefined}
-          size={28}
-        />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="truncate text-body font-semibold text-text-primary">
-              ${symbol}
-            </span>
-            <span className="rounded-sm bg-elevated px-1 text-[10px] uppercase tracking-wider text-text-muted">
-              {row.chain}
-            </span>
+      {/* MOBILE CARD */}
+      <div className="block px-3 py-3 md:hidden">
+        <div className="flex items-start gap-2.5">
+          <span className="num pt-1 text-small font-semibold text-text-muted">
+            {rank}
+          </span>
+          <TokenLogo
+            symbol={symbol}
+            chain={row.chain}
+            tokenId={row.token_id}
+            logoUrl={row.logo_url ?? undefined}
+            size={32}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-body font-semibold text-text-primary">
+                ${symbol}
+              </span>
+              <span className="rounded-sm bg-elevated px-1 text-[10px] uppercase tracking-wider text-text-muted">
+                {row.chain}
+              </span>
+            </div>
+            <div className="num text-[11px] text-text-muted">
+              {row.price_usd != null
+                ? row.price_usd < 0.01
+                  ? `$${row.price_usd.toPrecision(3)}`
+                  : `$${row.price_usd.toFixed(row.price_usd < 1 ? 4 : 2)}`
+                : "—"}
+            </div>
           </div>
-          <div className="truncate text-micro text-text-muted">
-            {row.token_id.split("-")[0]?.slice(0, 10)}…
+          <div className="text-right">
+            <PctCell value={row.price_change_24h} />
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">
+              24h
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-2 border-t border-border pt-2 text-[11px]">
+          <div>
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">1H</div>
+            <PctCell value={row.price_change_1h} />
+          </div>
+          <div>
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">Vol</div>
+            <USDCell value={row.volume_24h} />
+          </div>
+          <div>
+            <div className="text-[9px] uppercase tracking-wider text-text-muted">Liq</div>
+            <USDCell value={row.liquidity} />
           </div>
         </div>
       </div>
 
-      <PriceCell value={row.price_usd} />
-      <PctCell value={row.price_change_1h} />
-      <PctCell value={row.price_change_24h} />
-      <USDCell value={row.volume_24h} />
-      <USDCell value={row.liquidity} />
-      <USDCell value={row.fdv} />
+      {/* DESKTOP GRID */}
+      <div
+        className={cn(
+          "hidden items-center gap-2 px-3 py-2.5 md:grid",
+          MOVERS_GRID,
+        )}
+      >
+        <span className="num text-small font-semibold text-text-muted">
+          {rank}
+        </span>
+
+        <div className="flex min-w-0 items-center gap-2.5">
+          <TokenLogo
+            symbol={symbol}
+            chain={row.chain}
+            tokenId={row.token_id}
+            logoUrl={row.logo_url ?? undefined}
+            size={28}
+          />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate text-body font-semibold text-text-primary">
+                ${symbol}
+              </span>
+              <span className="rounded-sm bg-elevated px-1 text-[10px] uppercase tracking-wider text-text-muted">
+                {row.chain}
+              </span>
+            </div>
+            <div className="truncate text-micro text-text-muted">
+              {row.token_id.split("-")[0]?.slice(0, 10)}…
+            </div>
+          </div>
+        </div>
+
+        <PriceCell value={row.price_usd} />
+        <PctCell value={row.price_change_1h} />
+        <PctCell value={row.price_change_24h} />
+        <USDCell value={row.volume_24h} />
+        <USDCell value={row.liquidity} />
+        <USDCell value={row.fdv} />
+      </div>
     </li>
   );
 }
@@ -300,7 +358,7 @@ function MoverRowSkeleton() {
   return (
     <li
       className={cn(
-        "grid items-center gap-2 px-3 py-2.5",
+        "hidden items-center gap-2 px-3 py-2.5 md:grid",
         MOVERS_GRID,
       )}
     >

@@ -164,7 +164,7 @@ export default function SignalsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <div className="min-w-[1080px]">
+          <div className="md:min-w-[1080px]">
             <SignalRowHeaders mode={mode} />
 
             {loading ? (

@@ -35,8 +35,8 @@ export function TradeHistoryTable({
   isLoading?: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
-      <table className="w-full text-small">
+    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <table className="w-full min-w-[760px] text-small">
         <thead className="bg-elevated">
           <tr className="text-left label-micro">
             <th className="px-4 py-2.5 font-medium">Token</th>

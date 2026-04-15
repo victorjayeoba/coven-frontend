@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, CaretDown, ArrowsDownUp } from "@phosphor-icons/react";
+import { Wallet, CaretDown, ArrowsDownUp, List } from "@phosphor-icons/react";
 import { endpoints } from "@/lib/api/endpoints";
 import { formatUsd } from "@/lib/format";
 import { useBalances } from "@/lib/hooks/useBalances";
 import { useMe } from "@/lib/hooks/useMe";
+import { useUIStore } from "@/lib/stores/useUIStore";
 import { FundWalletModal } from "@/components/modals/FundWalletModal";
 import { SwapPopover } from "@/components/layout/SwapPopover";
 
@@ -30,8 +31,21 @@ export function TopBar() {
     (pnl?.unrealized_pnl_usd ?? 0) + (pnl?.total_realized_pnl_usd ?? 0);
   const walletValue = paperBalance + pnlValue;
 
+  const openMobileSidebar = useUIStore((s) => s.openMobileSidebar);
+
   return (
-    <header className="relative flex h-14 shrink-0 items-center justify-end gap-2 border-b border-border bg-base px-5">
+    <header className="relative flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-base px-3 md:justify-end md:px-5">
+      {/* Hamburger — mobile only */}
+      <button
+        type="button"
+        onClick={openMobileSidebar}
+        className="grid h-9 w-9 place-items-center rounded-md border border-border bg-surface text-text-secondary md:hidden"
+        aria-label="Open menu"
+      >
+        <List size={16} />
+      </button>
+
+      <div className="flex items-center gap-2">
       {isAuthed ? (
         <>
           {/* Swap button — opens Phantom-style swap popover */}
@@ -95,6 +109,7 @@ export function TopBar() {
           </Link>
         </div>
       )}
+      </div>
     </header>
   );
 }

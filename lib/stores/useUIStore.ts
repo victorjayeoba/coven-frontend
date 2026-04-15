@@ -9,6 +9,10 @@ export type PaperBalances = Record<NetworkId, number>;
 type UIState = {
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
+  // Mobile-only off-canvas drawer (not persisted — always starts closed).
+  mobileSidebarOpen: boolean;
+  openMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
   convictionThreshold: number;
   setConvictionThreshold: (n: number) => void;
 
@@ -32,6 +36,9 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       toggleSidebar: () =>
         set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      mobileSidebarOpen: false,
+      openMobileSidebar: () => set({ mobileSidebarOpen: true }),
+      closeMobileSidebar: () => set({ mobileSidebarOpen: false }),
       convictionThreshold: 70,
       setConvictionThreshold: (n) => set({ convictionThreshold: n }),
 

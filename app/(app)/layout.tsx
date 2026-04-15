@@ -22,7 +22,7 @@ export default function AppLayout({
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
           <main className="min-w-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[1600px] p-6">{children}</div>
+            <div className="mx-auto max-w-[1600px] p-3 sm:p-6">{children}</div>
           </main>
         </div>
         <TokenDetailDrawer />
