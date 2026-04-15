@@ -4,6 +4,8 @@
 
 On-chain alpha, detected and acted on in real time. Coven watches the smart-money wallets that move markets and turns their behavior into instant, executable trade signals — across Solana and BNB Chain.
 
+🏆 **Built for the AVE-CLAW Hackathon** — Coven is powered end-to-end by the [AVE Data API](https://ave.ai). Every signal we publish, every cluster we score, every token we list — the data comes from AVE. We use **11 of the 16** documented REST endpoints plus the live **`multi_tx` WebSocket stream**. Full breakdown in [AVE API usage](#-ave-api-usage--what-we-use-and-why) below.
+
 [🎬 Watch the demo](#-demo) · [🌐 Live site](#) · [⚙️ Backend repo](#)
 
 > Replace the three links above with your demo video URL, deployed URL, and backend GitHub URL.
@@ -15,13 +17,14 @@ On-chain alpha, detected and acted on in real time. Coven watches the smart-mone
 1. [The problem](#the-problem)
 2. [Our solution](#our-solution)
 3. [What makes Coven special](#what-makes-coven-special)
-4. [Key features](#key-features)
-5. [Demo](#-demo)
-6. [System architecture](#system-architecture)
-7. [Tech stack](#tech-stack)
-8. [Setup](#setup)
-9. [Team](#team)
-10. [License](#license)
+4. [AVE API usage — what we use and why](#-ave-api-usage--what-we-use-and-why)
+5. [Key features](#key-features)
+6. [Demo](#-demo)
+7. [System architecture](#system-architecture)
+8. [Tech stack](#tech-stack)
+9. [Setup](#setup)
+10. [Team](#team)
+11. [License](#license)
 
 ---
 
@@ -57,6 +60,53 @@ Every signal is timestamped, scored, and backtested against the next 7 days of p
 - **Multi-chain native.** Solana via Helius (real-time WebSocket), BNB Chain via BSCScan + AVE. Same UI, same bots, same Telegram alerts. No "we'll add other chains soon."
 - **Auto-execution that respects you.** Conviction threshold is per-user. Set it to 90 and only elite signals fire your bots; set it to 50 and you copy everything. Paper mode by default — no surprise capital deployment.
 - **Built-in Phantom-style swap.** Because if you're going to act on a signal, you shouldn't have to leave the app. Bidirectional, percentage-based, with real token logos and live balance.
+
+## 🔗 AVE API usage — what we use and why
+
+Coven is an AVE-first product. Without the AVE Data API, none of the signal logic exists. Below is the complete list of endpoints we integrate with, what each one powers in the app, and where in the codebase you can verify it.
+
+### REST endpoints (11 of 16 in active use)
+
+| # | AVE endpoint | Coven feature it powers | Backend file |
+|---|---|---|---|
+| 1 | `GET /tokens/trending` | Movers feed (dashboard), trending watchlist seeding for the WSS listener, `trending_<chain>` virtual rank topics | [`routers/tokens.py`](backend/app/routers/tokens.py), [`jobs/ws_listener.py`](backend/app/jobs/ws_listener.py), [`jobs/rank_poller.py`](backend/app/jobs/rank_poller.py) |
+| 2 | `GET /tokens/topic` (`tokens_platform`) | Pump-phase feeds — `pump_in_new` and `pump_in_hot` tokens. Used as virtual topics in the rank-stack signal algo | [`jobs/ws_listener.py`](backend/app/jobs/ws_listener.py), [`jobs/price_listener.py`](backend/app/jobs/price_listener.py), [`jobs/rank_poller.py`](backend/app/jobs/rank_poller.py) |
+| 3 | `GET /tokens/{token_id}` (`token_detail`) | Single-token price + market stats. Used by signal enricher (conviction scoring), bot runner (entry sizing), execution engine, manual trade close, and the token detail page | [`services/bot_runner.py`](backend/app/services/bot_runner.py), [`services/signal_enricher.py`](backend/app/services/signal_enricher.py), [`routers/tokens.py`](backend/app/routers/tokens.py), [`routers/trades.py`](backend/app/routers/trades.py), [`services/backtester.py`](backend/app/services/backtester.py) |
+| 4 | `GET /tokens/search` | Token search box (Cmd-K palette), Phantom-style swap popover token picker | [`routers/tokens.py`](backend/app/routers/tokens.py) |
+| 5 | `POST /tokens/price` (`batch_prices`) | Position monitor — marks every open paper position every tick to fire TP / SL / trailing stops | [`jobs/position_monitor.py`](backend/app/jobs/position_monitor.py) |
+| 6 | `GET /klines/token/{token_id}` | Token detail price chart (1m / 5m / 15m / 1h / 4h / 1d), backtester historical entry pricing | [`routers/tokens.py`](backend/app/routers/tokens.py), [`services/backtester.py`](backend/app/services/backtester.py) |
+| 7 | `GET /tx/swap/{pair_id}` (`swap_transactions`) | Per-pair recent swaps (REST fallback when WSS is throttled), token detail "Recent Swaps" panel | [`jobs/tx_poller.py`](backend/app/jobs/tx_poller.py), [`routers/tokens.py`](backend/app/routers/tokens.py) |
+| 8 | `GET /tokens/risk/{token_id}` (`contract_risk`) | Risk scoring on the token detail page (honeypot detection, mint authority, ownership renounced, etc.). Also factors into signal conviction | [`routers/tokens.py`](backend/app/routers/tokens.py), [`services/risk_checker.py`](backend/app/services/risk_checker.py) |
+| 9 | `GET /smart-wallets` (`smart_wallet_list`) | Seeds the wallet graph with high-alpha wallets at boot. Foundation of every cluster signal | [`services/graph_builder.py`](backend/app/services/graph_builder.py) |
+| 10 | `GET /wallet/tokens/{addr}` (`wallet_tokens`) | Wallet token-overlap analysis for clustering — wallets that hold the same memecoins land in the same cabal | [`services/graph_builder.py`](backend/app/services/graph_builder.py), [`services/backtester.py`](backend/app/services/backtester.py) |
+| 11 | `GET /wallet/tx/{addr}` (`wallet_token_tx`) | Backtesting — replays a wallet's historical buy/sell sequence to score entry attribution | [`services/backtester.py`](backend/app/services/backtester.py), [`routers/signals.py`](backend/app/routers/signals.py) |
+
+### Plus the live `multi_tx` WebSocket stream
+
+| AVE feed | Coven use |
+|---|---|
+| `wss://wss.ave-api.xyz` — `multi_tx` topic | Streams every swap on the ~145 trending + pump tokens we track, in real time. Drives the contagion detector — the source of all cluster signals | [`jobs/ws_listener.py`](backend/app/jobs/ws_listener.py) |
+
+### What the data actually does
+
+```
+   AVE                          What Coven turns it into
+   ───                          ─────────────────────────
+   /tokens/trending     ──►     Dashboard Movers · watchlist for WSS
+   /tokens/topic        ──►     Pump-phase signals · rank-stack input
+   /tokens/{id}         ──►     Conviction scoring · bot entry pricing
+   /tokens/search       ──►     Cmd-K palette · swap token picker
+   /tokens/price (batch)──►     Position monitor · TP/SL/trailing
+   /klines/token/{id}   ──►     Charts · backtest replays
+   /tx/swap/{pair}      ──►     Swap history · WSS fallback
+   /tokens/risk/{id}    ──►     Honeypot defense · risk scoring
+   /smart-wallets       ──►     Wallet graph seed · cluster discovery
+   /wallet/tokens       ──►     Cabal clustering by token overlap
+   /wallet/tx           ──►     Backtest entry attribution
+   wss multi_tx         ──►     CONTAGION DETECTOR — every cluster signal
+```
+
+The four AVE endpoints we don't currently use (`top100_holders`, `rank_topics` catalog, `pair_detail`, `supported_chains`, `wallet_pnl`) are wired in our `AveClient` and ready to integrate when we expand to holder analysis and per-wallet PnL pages.
 
 ## Key features
 
@@ -130,10 +180,14 @@ Coven is built as four loosely-coupled layers connected by an in-process event b
 ┌──────────────────────────────────────────────────────────────┐
 │  External feeds                                              │
 │  ───────────────                                             │
-│  • Helius WSS  (Solana wallet activity, real-time)           │
-│  • AVE WSS    (multi-chain pool swaps + rank topics)         │
-│  • BSCScan    (BSC wallet polling — REST fallback)           │
-│  • Jupiter    (price fallback for unindexed Solana tokens)   │
+│  ★ AVE Data API   (PRIMARY — 11 REST endpoints + WSS)        │
+│       — multi_tx WSS:  every swap on tracked tokens          │
+│       — /tokens/*:     trending, search, detail, prices,     │
+│                        candles, risk, pump-phase topics      │
+│       — /smart-wallets, /wallet/*:  cluster + backtest data  │
+│  • Helius WSS    (Solana wallet activity for copy bots)      │
+│  • BSCScan v2    (BSC wallet polling — REST fallback)        │
+│  • Jupiter       (price fallback for unindexed SOL tokens)   │
 └──────────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -220,7 +274,8 @@ End-to-end latency: typically under 2 seconds from on-chain confirmation.
 | Backend | FastAPI (Python 3.11) | Async-first, clean DI, fast |
 | Database | MongoDB (Motor async driver) | Schema-flexible for fast-evolving signal docs |
 | Event bus | In-process `asyncio` pub/sub | Zero infra, sub-ms fanout |
-| On-chain feeds | Helius (Solana) + AVE Data API + BSCScan v2 | Best-in-class coverage, paid + free tiers |
+| **Primary data API** | **AVE Data API** (11 REST endpoints + `multi_tx` WSS) | **Powers every signal, every chart, every cluster** |
+| Auxiliary on-chain feeds | Helius (Solana wallet WSS) + BSCScan v2 (BSC polling) + Jupiter (price fallback) | Fill gaps AVE doesn't cover (per-wallet copy-trade indexing) |
 | Auth | JWT in HTTP-only cookies | Standard, secure, CSRF-protected |
 | Bot framework (TG) | Telegram Bot API via long-polling | Simple, no webhook infra needed |
 | Deployment | Vercel (frontend) · Fly.io / Railway (backend) | Suggested — TBD |
