@@ -395,13 +395,10 @@ Open <http://localhost:3000>.
 
 ## Team
 
-> Replace with your actual team. Suggested format:
-
 | Name | Role | GitHub |
 |---|---|---|
-| TBD | Founder / Backend | `@github-handle` |
-| TBD | Frontend / Design | `@github-handle` |
-| TBD | Smart contracts / Web3 | `@github-handle` |
+| **Jayeoba Victor** | Full-stack developer | [@victorjayeoba](https://github.com/victorjayeoba) |
+| **Shafe** | Developer | — |
 
 ## License
 
