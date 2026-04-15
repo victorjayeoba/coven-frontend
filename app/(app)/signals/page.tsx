@@ -18,6 +18,7 @@ import {
   type TypeFilter,
 } from "@/components/signals/SignalsFilters";
 import { SignalsBanner } from "@/components/signals/SignalsBanner";
+import { SignalsEmptyTelegram } from "@/components/signals/SignalsEmptyTelegram";
 import { useLiveSignals } from "@/lib/hooks/useSignals";
 import { useBacktests } from "@/lib/hooks/useBacktests";
 import { useTokenMarkets } from "@/lib/hooks/useTokenMarkets";
@@ -173,16 +174,7 @@ export default function SignalsPage() {
                 ))}
               </ul>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-12 text-center">
-                <Lightning
-                  size={36}
-                  weight="duotone"
-                  className="mb-2 text-text-disabled"
-                />
-                <div className="text-small text-text-muted">
-                  No signals match the current filters.
-                </div>
-              </div>
+              <SignalsEmptyTelegram />
             ) : (
               <ul className="divide-y divide-border">
                 {pageRows.map((r: any, idx: number) => {

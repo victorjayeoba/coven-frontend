@@ -82,6 +82,9 @@ export const endpoints = {
     (await api.get("/backtests", { params })).data,
   backtestSummary: async () => (await api.get("/backtests/summary")).data,
 
+  // System
+  nextScanAt: async () => (await api.get("/system/next-scan-at")).data,
+
   // Settings
   getSettings: async () => (await api.get("/settings")).data,
   updateSettings: async (payload: Record<string, any>) =>
