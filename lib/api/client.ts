@@ -1,8 +1,9 @@
 import axios from "axios";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "/api";
-
+// Always go through Next.js's own /api proxy. The rewrite in next.config.js
+// forwards every /api/* request to the real backend (BACKEND_URL env var).
+// This keeps cookies first-party — no cross-domain session breakage.
 export const api = axios.create({
-  baseURL,
+  baseURL: "/api",
   withCredentials: true,
 });
