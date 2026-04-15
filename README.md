@@ -170,78 +170,123 @@ The video at the top of this README walks through:
 
 Coven is built as four loosely-coupled layers connected by an in-process event bus on the backend and an SSE stream on the frontend.
 
+### Top-down view
+
+```mermaid
+flowchart TD
+    %% External feeds
+    subgraph FEEDS["External Feeds"]
+        AVE["⭐ AVE Data API<br/>11 REST + multi_tx WSS"]
+        HELIUS["Helius WSS<br/>Solana wallets"]
+        BSCSCAN["BSCScan v2<br/>BSC wallet polling"]
+        JUPITER["Jupiter<br/>SOL price fallback"]
+    end
+
+    %% Background jobs
+    subgraph JOBS["Backend · Background Jobs (asyncio)"]
+        ws_listener["ws_listener<br/>AVE token swaps"]
+        helius_stream["helius_stream<br/>Wallet WSS"]
+        wallet_poller["wallet_poller<br/>REST fallback"]
+        price_listener["price_listener<br/>Live prices"]
+        rank_poller["rank_poller<br/>5-min leaderboard scan"]
+        position_monitor["position_monitor<br/>TP / SL / trailing"]
+    end
+
+    %% In-process event bus services
+    subgraph SERVICES["Backend · Services (event bus)"]
+        contagion_detector["contagion_detector"]
+        signal_enricher["signal_enricher"]
+        bot_runner["bot_runner"]
+        telegram_dispatcher["telegram_dispatcher"]
+    end
+
+    %% Storage
+    MONGO[("MongoDB<br/>signals · trades · users<br/>bots · clusters")]
+
+    %% API
+    subgraph API["API + SSE Layer (FastAPI)"]
+        REST["REST<br/>/api/signals · /tokens · /trades<br/>/bots · /settings · /telegram"]
+        SSE["SSE<br/>/api/stream/signals<br/>signal.* · price.update · bot.trade.*"]
+    end
+
+    %% Frontend
+    subgraph FRONT["Frontend (Next.js 14 · React · Tailwind · R3F)"]
+        LANDING["Landing<br/>WebGL grid hero"]
+        DASH["Dashboard<br/>Movers · Cabals"]
+        SIGNALS_UI["Signals<br/>filter · sort · paginate"]
+        TOKENS_UI["Tokens<br/>chart · risk · history"]
+        BOTS_UI["Bots · Portfolio · Settings"]
+    end
+
+    %% Telegram poller
+    TGBOT["Telegram Bot<br/>long-polling"]
+    USER(("👤 User"))
+
+    %% Wires
+    AVE --> ws_listener
+    AVE --> rank_poller
+    AVE --> price_listener
+    HELIUS --> helius_stream
+    BSCSCAN --> wallet_poller
+    JUPITER -.fallback.-> bot_runner
+
+    ws_listener --> contagion_detector
+    helius_stream --> contagion_detector
+    wallet_poller --> contagion_detector
+    rank_poller --> signal_enricher
+    contagion_detector --> signal_enricher
+    signal_enricher --> bot_runner
+    signal_enricher --> telegram_dispatcher
+    price_listener --> position_monitor
+    position_monitor --> bot_runner
+
+    contagion_detector --> MONGO
+    signal_enricher --> MONGO
+    bot_runner --> MONGO
+    rank_poller --> MONGO
+
+    MONGO --> REST
+    SERVICES --> SSE
+
+    REST <--> FRONT
+    SSE -.live.-> FRONT
+    FRONT --> USER
+    telegram_dispatcher --> TGBOT
+    TGBOT -.alert.-> USER
+
+    %% Highlight AVE as primary
+    style AVE fill:#3CC47B,color:#0b0e14,stroke:#3CC47B,stroke-width:2px
+    style MONGO fill:#1a222e,color:#e4eaf2,stroke:#3a4256
+    style USER fill:#3CC47B,color:#0b0e14
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  External feeds                                              │
-│  ───────────────                                             │
-│  ★ AVE Data API   (PRIMARY — 11 REST endpoints + WSS)        │
-│       — multi_tx WSS:  every swap on tracked tokens          │
-│       — /tokens/*:     trending, search, detail, prices,     │
-│                        candles, risk, pump-phase topics      │
-│       — /smart-wallets, /wallet/*:  cluster + backtest data  │
-│  • Helius WSS    (Solana wallet activity for copy bots)      │
-│  • BSCScan v2    (BSC wallet polling — REST fallback)        │
-│  • Jupiter       (price fallback for unindexed SOL tokens)   │
-└──────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  Backend (FastAPI · Python 3.11 · MongoDB)                   │
-│  ──────────────────────────────────────────                  │
-│  Background jobs (asyncio):                                  │
-│   • helius_stream  → wallet swaps (WSS)                      │
-│   • ws_listener    → token-level swaps (WSS)                 │
-│   • wallet_poller  → BSC + Solana fallback (REST)            │
-│   • price_listener → live token prices (WSS)                 │
-│   • rank_poller    → AVE leaderboard topics (REST 5-min)     │
-│   • position_monitor → mark open trades, fire TP/SL/trail    │
-│                                                              │
-│  Services (in-proc event bus):                               │
-│   contagion_detector → SIGNAL_FIRED                          │
-│         ↓                                                    │
-│   signal_enricher    → SIGNAL_SCORED (conviction + risk)     │
-│         ↓                                                    │
-│   bot_runner         → opens paper trades when bots match    │
-│         ↓                                                    │
-│   telegram_dispatcher → DMs alerts to opted-in users         │
-└──────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  API + SSE                                                   │
-│  ─────────                                                   │
-│  REST endpoints (auth via JWT cookie):                       │
-│   /api/signals/live · /api/tokens/movers · /api/trades/...   │
-│   /api/bots · /api/settings · /api/balance · /api/telegram   │
-│                                                              │
-│  SSE stream:                                                 │
-│   /api/stream/signals → signal.fired · signal.scored ·       │
-│                          price.update · swap · bot.trade.*   │
-└──────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  Frontend (Next.js 14 · React 18 · Tailwind · Three.js)      │
-│  ────────────────────────────────────────────────────────    │
-│  • Landing page (/)         — public, GridScan WebGL hero    │
-│  • Dashboard (/dashboard)   — auth, live Movers + cards      │
-│  • Signals (/signals)       — filter / sort / paginate       │
-│  • Tokens (/tokens/[id])    — detail + chart + history       │
-│  • Bots (/bots)             — create + manage signal/copy    │
-│  • Portfolio (/portfolio)   — equity curve + open + closed   │
-│  • Settings (/settings)     — conviction, chains, mode       │
-│                                                              │
-│  Live updates via SSE → patches React Query cache directly.  │
-└──────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  Telegram bot (separate poller)                              │
-│  ──────────────────────────────                              │
-│  • Receives /start with a link code → binds chat_id to user  │
-│  • Listens for inline Buy / View callback_data on alerts     │
-│  • Delivers signal cards filtered by user threshold          │
-└──────────────────────────────────────────────────────────────┘
+
+### Signal-to-trade sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Wallet as Smart-money wallet
+    participant AVE as AVE WSS multi_tx
+    participant Detector as contagion_detector
+    participant Enricher as signal_enricher
+    participant Bot as bot_runner
+    participant TG as telegram_dispatcher
+    participant Browser as User browser (SSE)
+    participant Phone as User Telegram
+
+    Wallet->>AVE: buys $PEPE on Pump.fun
+    AVE->>Detector: SWAP_EVENT (~1s)
+    Detector->>Detector: looks up cluster<br/>(Cabal #3)
+    Note over Detector: 2 other wallets in same cabal<br/>bought $PEPE in last 8 min
+    Detector->>Enricher: SIGNAL_FIRED
+    Enricher->>AVE: token risk + market stats
+    Enricher-->>Bot: SIGNAL_SCORED (conviction 78)
+    Enricher-->>TG: SIGNAL_SCORED (conviction 78)
+    Enricher-->>Browser: SSE: signal.scored
+    Bot->>Bot: opens paper trade<br/>($100, entry from AVE)
+    Bot-->>Browser: SSE: bot.trade.opened
+    TG->>Phone: 💬 "EXEC · conviction 78<br/>$PEPE — Cabal #3"<br/>[💰 Buy $100]
+    Browser->>Browser: row appears on /signals<br/>position appears on /portfolio
 ```
 
 ### How a signal becomes a trade
